@@ -28,6 +28,7 @@
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/GLCheck.hpp>
 #include <SFML/Graphics/Image.hpp>
+#include <SFML/Graphics/Texture.hpp>
 #ifdef SFML_SYSTEM_ANDROID
 #include <SFML/System/Android/ResourceStream.hpp>
 #endif
@@ -130,7 +131,7 @@ Font::Font(const Font& copy) :
 m_fontHandles(copy.m_fontHandles),
 m_isSmooth(copy.m_isSmooth),
 m_info(copy.m_info),
-m_pages(copy.m_pages),
+m_pageLists(copy.m_pageLists),
 m_pixelBuffer(copy.m_pixelBuffer)
 {
 }
@@ -352,26 +353,39 @@ const Font::Info& Font::getInfo() const
 ////////////////////////////////////////////////////////////
 const Glyph& Font::getGlyph(std::uint32_t codePoint, unsigned int characterSize, bool bold, float outlineThickness) const
 {
-    // Get the page corresponding to the character size
-    GlyphTable& glyphs = loadPage(characterSize).glyphs;
+    // Get the pages list corresponding to the character size
+    PageList& pages = m_pageLists[characterSize];
 
     // Build the key by combining the glyph index (based on code point), bold flag, and outline thickness
     std::uint64_t key = combine(outlineThickness,
                                 bold,
                                 FT_Get_Char_Index(m_fontHandles ? m_fontHandles->face.get() : nullptr, codePoint));
 
-    // Search the glyph into the cache
-    if (auto it = glyphs.find(key); it != glyphs.end())
+    // Search the glyph in the pages list
+    for (const auto& page : pages)
     {
-        // Found: just return it
-        return it->second;
+        // Search the glyph into the cache
+        const auto& glyphs = page.glyphs;
+        const auto  found  = glyphs.find(key);
+        if (found != glyphs.end())
+        {
+            return found->second;
+        }
     }
-    else
-    {
-        // Not found: we have to load it
-        Glyph glyph = loadGlyph(codePoint, characterSize, bold, outlineThickness);
-        return glyphs.emplace(key, glyph).first->second;
-    }
+
+    // Not found: we have to load it
+    Glyph glyph = loadGlyph(codePoint, characterSize, bold, outlineThickness);
+
+    // Store the glyph in the page that contains it
+    for (auto& page : pages)
+        if (glyph.texture == &page.texture)
+            return page.glyphs.emplace(key, glyph).first->second;
+
+    // No page found: simply store the glyph in the first page
+    assert(glyph.texture == nullptr);
+    if (pages.empty())
+        pages.emplace_back(m_isSmooth);
+    return pages.front().glyphs.emplace(key, glyph).first->second;
 }
 
 
@@ -481,11 +495,19 @@ float Font::getUnderlineThickness(unsigned int characterSize) const
     }
 }
 
-
 ////////////////////////////////////////////////////////////
-const Texture& Font::getTexture(unsigned int characterSize) const
+std::unordered_set<std::uint64_t> Font::getTextureIds(unsigned int characterSize) const
 {
-    return loadPage(characterSize).texture;
+    PageList& pages = m_pageLists[characterSize];
+    if (pages.empty())
+        pages.emplace_back(m_isSmooth);
+
+    std::unordered_set<std::uint64_t> textureIds;
+    for (const auto& page : pages)
+    {
+        textureIds.emplace(page.texture.m_cacheId);
+    }
+    return textureIds;
 }
 
 ////////////////////////////////////////////////////////////
@@ -495,9 +517,12 @@ void Font::setSmooth(bool smooth)
     {
         m_isSmooth = smooth;
 
-        for (auto& [key, page] : m_pages)
+        for (auto& [key, pageList] : m_pageLists)
         {
-            page.texture.setSmooth(m_isSmooth);
+            for (auto& page : pageList)
+            {
+                page.texture.setSmooth(m_isSmooth);
+            }
         }
     }
 }
@@ -508,7 +533,6 @@ bool Font::isSmooth() const
     return m_isSmooth;
 }
 
-
 ////////////////////////////////////////////////////////////
 Font& Font::operator=(const Font& right)
 {
@@ -517,7 +541,7 @@ Font& Font::operator=(const Font& right)
     std::swap(m_fontHandles, temp.m_fontHandles);
     std::swap(m_isSmooth, temp.m_isSmooth);
     std::swap(m_info, temp.m_info);
-    std::swap(m_pages, temp.m_pages);
+    std::swap(m_pageLists, temp.m_pageLists);
     std::swap(m_pixelBuffer, temp.m_pixelBuffer);
 
 #ifdef SFML_SYSTEM_ANDROID
@@ -535,15 +559,8 @@ void Font::cleanup()
     m_fontHandles.reset();
 
     // Reset members
-    m_pages.clear();
+    m_pageLists.clear();
     std::vector<std::uint8_t>().swap(m_pixelBuffer);
-}
-
-
-////////////////////////////////////////////////////////////
-Font::Page& Font::loadPage(unsigned int characterSize) const
-{
-    return m_pages.try_emplace(characterSize, m_isSmooth).first->second;
 }
 
 
@@ -639,11 +656,41 @@ Glyph Font::loadGlyph(std::uint32_t codePoint, unsigned int characterSize, bool 
         width += 2 * padding;
         height += 2 * padding;
 
-        // Get the glyphs page corresponding to the character size
-        Page& page = loadPage(characterSize);
+        // Get the pages list corresponding to the character size
+        PageList& pages = m_pageLists[characterSize];
 
-        // Find a good position for the new glyph into the texture
-        glyph.textureRect = findGlyphRect(page, {width, height});
+        // Find a page that can fit well the glyph
+        Page* foundPage = nullptr;
+        for (auto& page : pages)
+        {
+            // Try to find a good position for the new glyph into the texture
+            glyph.textureRect = findGlyphRect(page, {width, height});
+
+            if (glyph.textureRect.width > 0)
+            {
+                foundPage = &page;
+                break;
+            }
+        }
+
+        // If we didn't find a matching page, create a new one
+        if (!foundPage)
+        {
+            foundPage = &pages.emplace_back(m_isSmooth);
+
+            // Try to find a good position for the new glyph into the texture
+            glyph.textureRect = findGlyphRect(*foundPage, {width, height});
+
+            if (glyph.textureRect.width == 0)
+            {
+                // Oops, we've reached the maximum texture size even for a single glyph...
+                err() << "Failed to add a new character to the font: the maximum texture size has been reached"
+                      << std::endl;
+                glyph.textureRect = IntRect({0, 0}, {2, 2});
+            }
+        }
+
+        glyph.texture = &foundPage->texture;
 
         // Make sure the texture data is positioned in the center
         // of the allocated texture rectangle
@@ -708,7 +755,7 @@ Glyph Font::loadGlyph(std::uint32_t codePoint, unsigned int characterSize, bool 
         unsigned int y = static_cast<unsigned int>(glyph.textureRect.top) - padding;
         unsigned int w = static_cast<unsigned int>(glyph.textureRect.width) + 2 * padding;
         unsigned int h = static_cast<unsigned int>(glyph.textureRect.height) + 2 * padding;
-        page.texture.update(m_pixelBuffer.data(), {w, h}, {x, y});
+        foundPage->texture.update(m_pixelBuffer.data(), {w, h}, {x, y});
     }
 
     // Delete the FT glyph
@@ -770,10 +817,8 @@ IntRect Font::findGlyphRect(Page& page, const Vector2u& size) const
             }
             else
             {
-                // Oops, we've reached the maximum texture size...
-                err() << "Failed to add a new character to the font: the maximum texture size has been reached"
-                      << std::endl;
-                return IntRect({0, 0}, {2, 2});
+                // We've reached the maximum texture size, so return an empty rect
+                return {};
             }
         }
 

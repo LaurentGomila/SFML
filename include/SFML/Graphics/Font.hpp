@@ -34,9 +34,11 @@
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/Texture.hpp>
 
+#include <list>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 
@@ -280,18 +282,16 @@ public:
     float getUnderlineThickness(unsigned int characterSize) const;
 
     ////////////////////////////////////////////////////////////
-    /// \brief Retrieve the texture containing the loaded glyphs of a certain size
+    /// \brief Retrieve the texture IDs
     ///
-    /// The contents of the returned texture changes as more glyphs
-    /// are requested, thus it is not very relevant. It is mainly
-    /// used internally by sf::Text.
+    /// The texture ids are used internally by sf::Text.
     ///
     /// \param characterSize Reference character size
     ///
-    /// \return Texture containing the glyphs of the requested size
+    /// \return Texture ids used for glyphs of the requested size
     ///
     ////////////////////////////////////////////////////////////
-    const Texture& getTexture(unsigned int characterSize) const;
+    std::unordered_set<std::uint64_t> getTextureIds(unsigned int characterSize) const;
 
     ////////////////////////////////////////////////////////////
     /// \brief Enable or disable the smooth filter
@@ -364,21 +364,14 @@ private:
         std::vector<Row> rows;    //!< List containing the position of all the existing rows
     };
 
+    using PageList = std::list<Page>; //!< List of pages, where each page corresponds to a texture
+    using PageListTable = std::unordered_map<unsigned int, PageList>; //!< Table mapping a character size to its list of pages (textures)
+
     ////////////////////////////////////////////////////////////
     /// \brief Free all the internal resources
     ///
     ////////////////////////////////////////////////////////////
     void cleanup();
-
-    ////////////////////////////////////////////////////////////
-    /// \brief Find or create the glyphs page corresponding to the given character size
-    ///
-    /// \param characterSize Reference character size
-    ///
-    /// \return The glyphs page corresponding to \a characterSize
-    ///
-    ////////////////////////////////////////////////////////////
-    Page& loadPage(unsigned int characterSize) const;
 
     ////////////////////////////////////////////////////////////
     /// \brief Load a new glyph and store it in the cache
@@ -415,18 +408,13 @@ private:
     [[nodiscard]] bool setCurrentSize(unsigned int characterSize) const;
 
     ////////////////////////////////////////////////////////////
-    // Types
-    ////////////////////////////////////////////////////////////
-    class FontHandles;
-    using PageTable = std::unordered_map<unsigned int, Page>; //!< Table mapping a character size to its page (texture)
-
-    ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
+    class FontHandles;
     std::shared_ptr<FontHandles> m_fontHandles; //!< Shared information about the internal font instance
     bool                         m_isSmooth;    //!< Status of the smooth filter
     Info                         m_info;        //!< Information about the font
-    mutable PageTable            m_pages;       //!< Table containing the glyphs pages by character size
+    mutable PageListTable        m_pageLists;   //!< Table containing the glyphs pages by character size
     mutable std::vector<std::uint8_t> m_pixelBuffer; //!< Pixel buffer holding a glyph's pixels before being written to the texture
 #ifdef SFML_SYSTEM_ANDROID
     std::unique_ptr<priv::ResourceStream> m_stream; //!< Asset file streamer (if loaded from file)

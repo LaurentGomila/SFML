@@ -35,6 +35,8 @@
 
 namespace sf
 {
+class Texture;
+
 ////////////////////////////////////////////////////////////
 /// \brief Structure describing a glyph
 ///
@@ -46,18 +48,19 @@ public:
     /// \brief Default constructor
     ///
     ////////////////////////////////////////////////////////////
-    Glyph() : advance(0), lsbDelta(0), rsbDelta(0)
+    Glyph() : advance(0), lsbDelta(0), rsbDelta(0), texture(nullptr)
     {
     }
 
     ////////////////////////////////////////////////////////////
     // Member data
     ////////////////////////////////////////////////////////////
-    float     advance;     //!< Offset to move horizontally to the next character
-    int       lsbDelta;    //!< Left offset after forced autohint. Internally used by getKerning()
-    int       rsbDelta;    //!< Right offset after forced autohint. Internally used by getKerning()
-    FloatRect bounds;      //!< Bounding rectangle of the glyph, in coordinates relative to the baseline
-    IntRect   textureRect; //!< Texture coordinates of the glyph inside the font's texture
+    float          advance;     //!< Offset to move horizontally to the next character
+    int            lsbDelta;    //!< Left offset after forced autohint. Internally used by getKerning()
+    int            rsbDelta;    //!< Right offset after forced autohint. Internally used by getKerning()
+    FloatRect      bounds;      //!< Bounding rectangle of the glyph, in coordinates relative to the baseline
+    IntRect        textureRect; //!< Texture coordinates of the glyph inside the font's texture
+    const Texture* texture;     //!< Font's texture containing the glyph
 };
 
 } // namespace sf
@@ -74,6 +77,7 @@ public:
 ///
 /// The sf::Glyph structure provides the information needed
 /// to handle the glyph:
+/// \li the font's texture containing the glyph
 /// \li its coordinates in the font's texture
 /// \li its bounding rectangle
 /// \li the offset to apply to get the starting position of the next glyph
