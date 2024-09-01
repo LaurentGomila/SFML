@@ -398,4 +398,10 @@ bool WindowImpl::createVulkanSurface([[maybe_unused]] const VkInstance&         
 #endif
 }
 
+////////////////////////////////////////////////////////////
+void WindowImpl::setFileDroppingEnabled(bool /* enabled */)
+{
+    // Backup for platforms that don't support drag & drop
+}
+
 } // namespace sf::priv

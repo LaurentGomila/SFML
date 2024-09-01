@@ -1608,6 +1608,9 @@ void WindowImplX11::initialize()
     // Flush the commands queue
     XFlush(m_display.get());
 
+    // Make sure that file dropping is disabled
+    setFileDroppingEnabled(false);
+
     // Add this window to the global list of windows (required for focus request)
     const std::lock_guard lock(allWindowsMutex);
     allWindows.push_back(this);
@@ -1798,6 +1801,146 @@ bool WindowImplX11::processEvent(XEvent& windowEvent)
                                    &windowEvent);
                     }
                 }
+            }
+
+            // Specifications for Xdnd: https://wiki.freedesktop.org/www/Specifications/XDND/
+
+            // Drag and drop position update
+            if (windowEvent.xclient.message_type == getAtom("XdndPosition"))
+            {
+                const Atom xdndStatus = XInternAtom(m_display.get(), "XdndStatus", false);
+
+                XEvent message;
+                message.xclient.type         = ClientMessage;
+                message.xclient.display      = windowEvent.xclient.display;
+                message.xclient.window       = m_dropSource;
+                message.xclient.message_type = xdndStatus;
+                message.xclient.format       = 32;
+
+                message.xclient.data.l[0] = static_cast<long>(m_window); // The current window
+
+                // Specify if we want the drop or not, and if we want XdndPosition events whenever the mouse moves out of the rectangle
+                message.xclient.data.l[1] = (m_acceptedFileType != None);
+
+                // Send back window rectangle coordinates and width
+                message.xclient.data.l[2] = 0;
+                message.xclient.data.l[3] = 0;
+
+                // Specify action we accept
+                message.xclient.data.l[4] = static_cast<long>(getAtom("XdndActionCopy"));
+
+                XSendEvent(m_display.get(), m_dropSource, false, 0, &message);
+            }
+
+            if (windowEvent.xclient.message_type == getAtom("XdndEnter"))
+            {
+                // Store the source window
+                m_dropSource = static_cast<::Window>(windowEvent.xclient.data.l[0]);
+
+                m_acceptedFileType = None;
+
+                if (windowEvent.xclient.data.l[1] & 0x1)
+                {
+                    // There are more than 3 types supported by the source, so we must get the XdndTypeList
+                    Atom           actualType       = None;
+                    int            actualFormat     = 0;
+                    unsigned long  numOfItems       = 0;
+                    unsigned long  bytesAfterReturn = 0;
+                    unsigned char* data             = nullptr;
+                    // Get the list of types that the source supports
+                    if (XGetWindowProperty(m_display.get(),
+                                           m_dropSource,
+                                           getAtom("XdndTypeList"),
+                                           0,
+                                           1024,
+                                           false,
+                                           AnyPropertyType,
+                                           &actualType,
+                                           &actualFormat,
+                                           &numOfItems,
+                                           &bytesAfterReturn,
+                                           &data) == Success)
+                    {
+                        if (actualType != None)
+                        {
+                            Atom* supportedAtoms = reinterpret_cast<Atom*>(data);
+
+                            // Go through all of them and check if we support any of them
+                            for (int i = 0; i < static_cast<int>(numOfItems); i++)
+                            {
+                                if (canAcceptFileType(supportedAtoms[i]))
+                                {
+                                    m_acceptedFileType = supportedAtoms[i];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Go through the 3 types that the source supports and check if we support any of them
+                    for (int i = 2; i < 5; i++)
+                    {
+                        if (canAcceptFileType(static_cast<Atom>(windowEvent.xclient.data.l[i])))
+                        {
+                            m_acceptedFileType = static_cast<Atom>(windowEvent.xclient.data.l[i]);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // An item has been dropped
+            if (windowEvent.xclient.message_type == getAtom("XdndDrop"))
+            {
+                // Make sure that an acceptable file type was found
+                if (m_acceptedFileType != None)
+                {
+                    // Get the timestamp
+                    const auto dropTimestamp = static_cast<::Time>(windowEvent.xclient.data.l[2]);
+
+                    // Get the selection using the given timestamp
+                    XConvertSelection(m_display.get(),
+                                      getAtom("XdndSelection"),
+                                      m_acceptedFileType,
+                                      getAtom("XDND_DATA"),
+                                      m_window,
+                                      dropTimestamp);
+                }
+
+                XEvent message;
+
+                message.xclient.type         = ClientMessage;
+                message.xclient.display      = m_display.get();
+                message.xclient.window       = m_dropSource;
+                message.xclient.message_type = getAtom("XdndFinished");
+                message.xclient.format       = 32;
+                message.xclient.data.l[0]    = static_cast<long>(m_window);
+                if (m_acceptedFileType != None)
+                {
+                    // Tell the application we copied the data
+                    message.xclient.data.l[1] = 1;
+                    message.xclient.data.l[2] = static_cast<long>(getAtom("XdndActionCopy"));
+                }
+                else
+                {
+                    // Tell the application we did nothing
+                    message.xclient.data.l[1] = 0;
+                    message.xclient.data.l[2] = None;
+                }
+
+                XSendEvent(m_display.get(), m_dropSource, false, NoEventMask, &message);
+
+                m_acceptedFileType = None;
+                m_dropSource       = 0;
+            }
+
+            // The cursor left the window, so make sure we clean up
+            if (windowEvent.xclient.message_type == getAtom("XdndLeave"))
+            {
+                m_acceptedFileType = None;
+                m_dropSource       = 0;
             }
             break;
         }
@@ -2073,6 +2216,92 @@ bool WindowImplX11::processEvent(XEvent& windowEvent)
 
             break;
         }
+
+        // XConvertSelection response
+        case SelectionNotify:
+        {
+            if (windowEvent.xclient.message_type == getAtom("XdndSelection"))
+            {
+                // Notification that the current selection owner
+                // has responded to our request
+
+                Atom           type           = 0;
+                int            format         = 0;
+                unsigned long  items          = 0;
+                unsigned long  remainingBytes = 0;
+                unsigned char* data           = nullptr;
+
+                // The selection owner should have written the selection
+                // data to the specified window property
+                const int result = XGetWindowProperty(m_display.get(),
+                                                      m_window,
+                                                      windowEvent.xselection.property,
+                                                      0,
+                                                      0x7fffffff,
+                                                      False,
+                                                      AnyPropertyType,
+                                                      &type,
+                                                      &format,
+                                                      &items,
+                                                      &remainingBytes,
+                                                      &data);
+
+                String filenames;
+
+                if (result == Success)
+                {
+                    // We don't support INCR for now
+                    // It is very unlikely that this will be returned
+                    // for purely text data transfer anyway
+                    if (type != getAtom("INCR", false))
+                    {
+                        filenames = reinterpret_cast<char*>(data);
+                    }
+
+                    XFree(data);
+
+                    // The selection requestor must always delete the property themselves
+                    XDeleteProperty(m_display.get(), m_window, windowEvent.xselection.property);
+                }
+
+                // Split sf::String into std::vector<sf::String> by the new lines
+
+                std::vector<String> filenamesVector;
+                size_t              lastPosition = 0;
+
+                while (filenames.find("\n", lastPosition) != std::string::npos)
+                {
+                    filenamesVector.push_back(
+                        filenames.substring(lastPosition, filenames.find("\n", lastPosition) - lastPosition + 1));
+
+                    lastPosition = filenames.find("\n", lastPosition) + 1;
+                }
+
+                if (lastPosition < filenames.getSize())
+                {
+                    filenamesVector.push_back(filenames.substring(lastPosition, filenames.getSize() - lastPosition));
+                }
+
+                for (String& filename : filenamesVector)
+                {
+                    // To signify that it is giving a file, a program may put file:// at the start, so remove it
+                    if (filename.find("file://") == 0)
+                    {
+                        filename = filename.substring(7, filename.getSize() - 7);
+                    }
+
+                    // The last character can be a newline for file lists, so remove it if it is there
+                    while (filename[filename.getSize() - 1] == '\n' || filename[filename.getSize() - 1] == '\r')
+                    {
+                        filename = filename.substring(0, filename.getSize() - 1);
+                    }
+                }
+
+                pushEvent(Event::FilesDropped{filenamesVector, Mouse::getPosition()});
+            }
+
+            break;
+        }
     }
 
     return true;
@@ -2169,6 +2398,60 @@ void WindowImplX11::setWindowSizeConstraints() const
         sizeHints.max_height = static_cast<int>(maximumSize->y);
     }
     XSetWMNormalHints(m_display.get(), m_window, &sizeHints);
+}
+
+////////////////////////////////////////////////////////////
+void WindowImplX11::setFileDroppingEnabled(bool enabled)
+{
+    // Xdnd does not work on Wayland, so we check if Wayland is currently active before we enable Xdnd
+    // Checking if this exists isn't a perfect solution, as a user could set this
+    // in their environment variables, but it's better than crashing
+
+    const char* value = getenv("WAYLAND_DISPLAY");
+
+    // If this variable exists, then that (usually) means that wayland is being used instead of X11, so don't turn on file dropping
+    if (value != nullptr)
+    {
+        // If we are enabling it give it an error, but don't give an error if we are disabling it
+        if (enabled)
+        {
+            sf::err() << "Drag and drop is not supported on Xwayland!" << std::endl;
+        }
+
+        return;
+    }
+
+    // In order for item dropping to be enabled, the XdndAware property must be set.
+    if (enabled)
+    {
+        Atom xdndVersion = 5;
+        XChangeProperty(m_display.get(),
+                        m_window,
+                        getAtom("XdndAware"),
+                        XA_ATOM,
+                        32,
+                        PropModeReplace,
+                        reinterpret_cast<unsigned char*>(&xdndVersion),
+                        true);
+    }
+    else
+    {
+        XDeleteProperty(m_display.get(), m_window, getAtom("XdndAware"));
+    }
+}
+
+bool sf::priv::WindowImplX11::canAcceptFileType(const Atom& fileType)
+{
+    // We currently only accept uri-lists, but this can be changed if you want to add more types to be supported
+
+    // Array of acceptable file types, this is static so we don't get the Atoms every time
+    static const std::array<Atom, 1> acceptableFileTypes({
+        getAtom("text/uri-list"),
+    });
+
+    return std::any_of(acceptableFileTypes.begin(),
+                       acceptableFileTypes.end(),
+                       [fileType](const Atom& atom) { return atom == fileType; });
 }
 
 } // namespace sf::priv

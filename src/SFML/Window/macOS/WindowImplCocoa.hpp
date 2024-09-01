@@ -229,6 +229,16 @@ public:
     void applyContext(NSOpenGLContextRef context) const;
 
     ////////////////////////////////////////////////////////////
+    /// \brief Handle the file dropping event
+    ///
+    /// Called by SFOpenGLView to handle the file dropping event
+    ///
+    /// \param files The files that were dropped
+    ///
+    ////////////////////////////////////////////////////////////
+    void handleFileDroppingEvent(std::vector<sf::String> files, sf::Vector2i position);
+
+    ////////////////////////////////////////////////////////////
     /// \brief Change the type of the current process
     ///
     /// The type of the process is changed to become a full GUI app.
@@ -368,6 +378,18 @@ public:
     ///
     ////////////////////////////////////////////////////////////
     [[nodiscard]] bool hasFocus() const override;
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Enable or disable file dropping.
+    ///
+    /// If this is disabled, then when a user drags a file on to the window
+    /// the file will be automatically denied. When this is enabled, the file
+    /// will be accepted, no matter the type
+    ///
+    /// \param enabled True to enable, false to disable
+    ///
+    ////////////////////////////////////////////////////////////
+    void setFileDroppingEnabled(bool enabled = true) override;
 
 protected:
     ////////////////////////////////////////////////////////////

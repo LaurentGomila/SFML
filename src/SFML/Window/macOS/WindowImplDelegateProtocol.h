@@ -251,6 +251,14 @@ class WindowImplCocoa;
 ////////////////////////////////////////////////////////////
 - (void)applyContext:(NSOpenGLContext*)context;
 
+////////////////////////////////////////////////////////////
+/// \brief Enable or disable file dropping
+///
+/// \param enable True to enable, false to disable
+///
+////////////////////////////////////////////////////////////
+- (void)setFileDroppingEnabled:(bool)enabled;
+
 @end
 
 #pragma GCC diagnostic pop

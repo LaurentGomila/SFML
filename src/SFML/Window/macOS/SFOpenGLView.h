@@ -140,6 +140,12 @@ class WindowImplCocoa;
 ////////////////////////////////////////////////////////////
 - (CGFloat)displayScaleFactor;
 
+// Event called by MacOS when a file is dragged on top of of the window
+- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender;
+
+// Function called by MacOS when a file is dropped on top of the window
+- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender;
+
 @end
 
 @interface SFOpenGLView (keyboard)

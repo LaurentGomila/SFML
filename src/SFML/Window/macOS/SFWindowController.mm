@@ -628,4 +628,17 @@
     return static_cast<float>(NSHeight([m_window frame]) - NSHeight([[m_window contentView] frame]));
 }
 
+////////////////////////////////////////////////////////
+- (void)setFileDroppingEnabled:(bool)enabled
+{
+    if (enabled)
+    {
+        [m_oglView registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
+    }
+    else
+    {
+        [m_oglView unregisterDraggedTypes];
+    }
+}
+
 @end
