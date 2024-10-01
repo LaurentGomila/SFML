@@ -133,6 +133,34 @@ FloatRect VertexArray::getBounds() const
 
 
 ////////////////////////////////////////////////////////////
+std::vector<Vertex>::iterator VertexArray::begin()
+{
+    return m_vertices.begin();
+}
+
+
+////////////////////////////////////////////////////////////
+std::vector<Vertex>::const_iterator VertexArray::begin() const
+{
+    return m_vertices.begin();
+}
+
+
+////////////////////////////////////////////////////////////
+std::vector<Vertex>::iterator VertexArray::end()
+{
+    return m_vertices.end();
+}
+
+
+////////////////////////////////////////////////////////////
+std::vector<Vertex>::const_iterator VertexArray::end() const
+{
+    return m_vertices.end();
+}
+
+
+////////////////////////////////////////////////////////////
 void VertexArray::draw(RenderTarget& target, RenderStates states) const
 {
     if (!m_vertices.empty())

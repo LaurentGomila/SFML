@@ -169,8 +169,8 @@ void Text::setFillColor(Color color)
         // (if geometry is updated anyway, we can skip this step)
         if (!m_geometryNeedUpdate)
         {
-            for (std::size_t i = 0; i < m_vertices.getVertexCount(); ++i)
-                m_vertices[i].color = m_fillColor;
+            for (auto& vertex : m_vertices)
+                vertex.color = m_fillColor;
         }
     }
 }
@@ -187,8 +187,8 @@ void Text::setOutlineColor(Color color)
         // (if geometry is updated anyway, we can skip this step)
         if (!m_geometryNeedUpdate)
         {
-            for (std::size_t i = 0; i < m_outlineVertices.getVertexCount(); ++i)
-                m_outlineVertices[i].color = m_outlineColor;
+            for (auto& vertex : m_outlineVertices)
+                vertex.color = m_outlineColor;
         }
     }
 }
