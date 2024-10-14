@@ -350,6 +350,12 @@ bool WindowBase::createVulkanSurface(const VkInstance& instance, VkSurfaceKHR& s
 }
 
 
+void WindowBase::setFileDroppingEnabled(bool enabled)
+{
+    if (m_impl)
+        m_impl->setFileDroppingEnabled(enabled);
+}
+
 ////////////////////////////////////////////////////////////
 void WindowBase::onCreate()
 {

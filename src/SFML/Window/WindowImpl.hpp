@@ -305,6 +305,18 @@ public:
     ////////////////////////////////////////////////////////////
     bool createVulkanSurface(const VkInstance& instance, VkSurfaceKHR& surface, const VkAllocationCallbacks* allocator) const;
 
+    ////////////////////////////////////////////////////////////
+    /// \brief Enable or disable file dropping.
+    ///
+    /// If this is disabled, then when a user drags a file on to the window
+    /// the file will be automatically denied. When this is enabled, the file
+    /// will be accepted, no matter the type
+    ///
+    /// \param enabled True to enable, false to disable
+    ///
+    ////////////////////////////////////////////////////////////
+    virtual void setFileDroppingEnabled(bool enabled = true);
+
 protected:
     ////////////////////////////////////////////////////////////
     /// \brief Default constructor

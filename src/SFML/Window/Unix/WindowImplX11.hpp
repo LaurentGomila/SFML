@@ -198,6 +198,14 @@ public:
     void requestFocus() override;
 
     ////////////////////////////////////////////////////////////
+    /// \brief Enable or disable file dropping.
+    ///
+    /// \param enabled True to enable, false to disable
+    ///
+    ////////////////////////////////////////////////////////////
+    void setFileDroppingEnabled(bool enabled = true) override;
+
+    ////////////////////////////////////////////////////////////
     /// \brief Check whether the window has the input focus
     ///
     /// \return `true` if window has focus, `false` otherwise
@@ -211,6 +219,16 @@ protected:
     ///
     ////////////////////////////////////////////////////////////
     void processEvents() override;
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Check if the given file type can be accepted
+    ///
+    /// \param fileType The file type to check
+    ///
+    /// \return If the file type is acceptable
+    ///
+    ////////////////////////////////////////////////////////////
+    bool canAcceptFileType(const Atom& fileType);
 
 private:
     ////////////////////////////////////////////////////////////
@@ -336,6 +354,8 @@ private:
     Pixmap   m_iconPixmap{};     ///< The current icon pixmap if in use
     Pixmap   m_iconMaskPixmap{}; ///< The current icon mask pixmap if in use
     ::Time   m_lastInputTime{};  ///< Last time we received user input
+    ::Window m_dropSource{0};    ///< The window which is giving the dropped item
+    Atom m_acceptedFileType{0}; ///< The MIME type that the other window supports that we also support for file dropping
 };
 
 } // namespace sf::priv

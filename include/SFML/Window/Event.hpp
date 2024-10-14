@@ -35,6 +35,7 @@
 #include <SFML/System/Vector2.hpp>
 
 #include <variant>
+#include <vector>
 
 
 namespace sf
@@ -295,6 +296,16 @@ public:
     };
 
     ////////////////////////////////////////////////////////////
+    /// \brief Files dropped event subtype
+    ///
+    ////////////////////////////////////////////////////////////
+    struct FilesDropped
+    {
+        std::vector<sf::String> filenames; //!< The files which were dropped
+        Vector2i                position;  //!< The position of the cursor at the time the files were dropped
+    };
+
+    ////////////////////////////////////////////////////////////
     /// \brief Construct from a given `sf::Event` subtype
     ///
     /// \tparam `TEventSubtype` Type of event subtype used to construct the event
@@ -364,7 +375,8 @@ private:
                  TouchBegan,
                  TouchMoved,
                  TouchEnded,
-                 SensorChanged>
+                 SensorChanged,
+                 FilesDropped>
         m_data; //!< Event data
 
     ////////////////////////////////////////////////////////////

@@ -186,6 +186,9 @@
     // Now that we have a window, set up correctly the scale factor and cursor grabbing
     [self updateScaleFactor];
     [self updateCursorGrabbed]; // update for fullscreen
+
+    // Register the drag types that this view can accept
+    //[self registerForDraggedTypes:[NSArray arrayWithObjects:NSFilenamesPboardType, nil]];
 }
 
 
@@ -341,6 +344,62 @@
     m_mouseIsIn = NO;
 }
 
+- (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
+{
+    // Check if what is being dragged is a file
+    if ([sender.draggingPasteboard.types containsObject:NSFilenamesPboardType])
+    {
+        // Make sure that we can get the filename (not just the contents)
+        if (sender.draggingSourceOperationMask & NSDragOperationLink)
+        {
+            // Return that we can accept a filename
+            return NSDragOperationLink;
+        }
+    }
+
+    // Return that we can't accept this file
+    return NSDragOperationNone;
+}
+
+- (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
+{
+    // Make sure that the dragged item is a file
+    if ([sender.draggingPasteboard.types containsObject:NSFilenamesPboardType])
+    {
+        // Get the filenames from the sender
+        NSArray* files = [sender.draggingPasteboard propertyListForType:NSFilenamesPboardType];
+
+        // Convert to std::vector<std::string>
+
+        std::vector<sf::String> filenames;
+
+        for (NSUInteger i = 0; i < [files count]; i++)
+        {
+            NSObject* item = files[i];
+
+            // Make sure that we can cast the NSObject*
+            if ([item isKindOfClass:[NSMutableString class]])
+            {
+                auto* filename = reinterpret_cast<NSMutableString*>(item);
+
+                filenames.emplace_back([filename UTF8String]);
+            }
+        }
+
+        NSPoint mousePosition = [self cursorPositionFromEvent:nil];
+
+        if (m_requester != nullptr)
+            m_requester->handleFileDroppingEvent(filenames, sf::Vector2i{int(mousePosition.x), int(mousePosition.y)});
+    }
+    else
+    {
+        // If somehow we get a drag operation for an item we cant accept, return no
+        return NO;
+    }
+
+    // Everything went well, return yes
+    return YES;
+}
 
 #pragma mark
 #pragma mark Subclassing methods
