@@ -165,13 +165,13 @@ if(SFML_USE_SYSTEM_DEPS)
     foreach(DEP_FILE ${DEP_LIBS} ${DEP_BINS} ${DEP_HEADERS})
         get_filename_component(DEP_DIR ${DEP_FILE} PATH)
 
-        if(NOT DEP_DIR MATCHES "/(stb_image|minimp3)(/|$)")
+        if(NOT DEP_DIR MATCHES "/(stb_image|dr_mp3)(/|$)")
             list(APPEND CMAKE_IGNORE_PATH "${DEP_DIR}")
         endif()
 
         get_filename_component(DEP_PARENT_DIR ${DEP_DIR} PATH)
         while(NOT DEP_PARENT_DIR STREQUAL "${CMAKE_SOURCE_DIR}/extlibs")
-            if(NOT DEP_DIR MATCHES "/(stb_image|minimp3)(/|$)")
+            if(NOT DEP_DIR MATCHES "/(stb_image|dr_mp3)(/|$)")
                 list(APPEND CMAKE_IGNORE_PATH "${DEP_PARENT_DIR}")
             endif()
 

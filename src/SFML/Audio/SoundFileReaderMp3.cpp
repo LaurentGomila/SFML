@@ -25,30 +25,10 @@
 ////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
-#define MINIMP3_IMPLEMENTATION // Minimp3 control define, places implementation in this file.
-#ifndef NOMINMAX
-#define NOMINMAX               // To avoid windows.h and std::min issue
-#endif
-#define MINIMP3_NO_STDIO       // Minimp3 control define, eliminate file manipulation code which is useless here
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4242 4244 4267 4456 4706)
-#else
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
-
-#include <minimp3_ex.h>
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#else
-#pragma GCC diagnostic pop
-#endif
-
-#undef NOMINMAX
-#undef MINIMP3_NO_STDIO
+#define DR_MP3_IMPLEMENTATION
+#define DR_MP3_NO_STDIO
+#include <dr_mp3.h>
+#undef DR_MP3_NO_STDIO
 
 #include <SFML/Audio/SoundFileReaderMp3.hpp>
 #include <SFML/System/InputStream.hpp>
@@ -60,17 +40,17 @@
 
 namespace
 {
-std::size_t readCallback(void* ptr, std::size_t size, void* data)
+std::size_t readCallback(void* userData, void* bufferOut, std::size_t bytesToRead)
 {
-    sf::InputStream* stream = static_cast<sf::InputStream*>(data);
-    return static_cast<std::size_t>(stream->read(ptr, static_cast<sf::Int64>(size)));
+    sf::InputStream* stream = static_cast<sf::InputStream*>(userData);
+    return static_cast<std::size_t>(stream->read(bufferOut, static_cast<sf::Int64>(bytesToRead)));
 }
 
-int seekCallback(uint64_t offset, void* data)
+drmp3_bool32 seekCallback(void* userData, int offset, drmp3_seek_origin /* origin */)
 {
-    sf::InputStream* stream = static_cast<sf::InputStream*>(data);
-    sf::Int64 position = stream->seek(static_cast<sf::Int64>(offset));
-    return position < 0 ? -1 : 0;
+    sf::InputStream* stream = static_cast<sf::InputStream*>(userData);
+    const sf::Int64 position = stream->seek(static_cast<sf::Int64>(offset));
+    return position >= 0;
 }
 
 bool hasValidId3Tag(const sf::Uint8* header)
@@ -94,7 +74,7 @@ bool SoundFileReaderMp3::check(InputStream& stream)
     if (hasValidId3Tag(header))
         return true;
 
-    if (hdr_valid(header))
+    if (drmp3_hdr_valid(header))
         return true;
 
     return false;
@@ -106,36 +86,27 @@ SoundFileReaderMp3::SoundFileReaderMp3() :
 m_numSamples(0),
 m_position(0)
 {
-    std::memset(&m_io, 0, sizeof(m_io));
-    std::memset(&m_decoder, 0, sizeof(m_decoder));
-    m_io.read = readCallback;
-    m_io.seek = seekCallback;
 }
 
 
 ////////////////////////////////////////////////////////////
 SoundFileReaderMp3::~SoundFileReaderMp3()
 {
-    mp3dec_ex_close(&m_decoder);
+    drmp3_uninit(&m_decoder);
 }
 
 
 ////////////////////////////////////////////////////////////
 bool SoundFileReaderMp3::open(InputStream& stream, Info& info)
 {
-    // Init IO callbacks
-    m_io.read_data = &stream;
-    m_io.seek_data = &stream;
-
     // Init mp3 decoder
-    mp3dec_ex_open_cb(&m_decoder, &m_io, MP3D_SEEK_TO_SAMPLE);
-    if (!m_decoder.samples)
+    if (drmp3_init(&m_decoder, readCallback, seekCallback, &stream, NULL) != 1)
         return false;
 
     // Retrieve the music attributes
-    info.channelCount = static_cast<unsigned int>(m_decoder.info.channels);
-    info.sampleRate   = static_cast<unsigned int>(m_decoder.info.hz);
-    info.sampleCount  = m_decoder.samples;
+    info.channelCount = static_cast<unsigned int>(m_decoder.channels);
+    info.sampleRate   = static_cast<unsigned int>(m_decoder.sampleRate);
+    info.sampleCount  = drmp3_get_pcm_frame_count(&m_decoder) * m_decoder.channels;
 
     m_numSamples      = info.sampleCount;
     return true;
@@ -146,15 +117,16 @@ bool SoundFileReaderMp3::open(InputStream& stream, Info& info)
 void SoundFileReaderMp3::seek(Uint64 sampleOffset)
 {
     m_position = std::min(sampleOffset, m_numSamples);
-    mp3dec_ex_seek(&m_decoder, m_position);
+    drmp3_seek_to_pcm_frame(&m_decoder, m_position);
 }
 
 
 ////////////////////////////////////////////////////////////
 Uint64 SoundFileReaderMp3::read(Int16* samples, Uint64 maxCount)
 {
-    Uint64 toRead = std::min(maxCount, m_numSamples - m_position);
-    toRead = static_cast<Uint64>(mp3dec_ex_read(&m_decoder, samples, static_cast<std::size_t>(toRead)));
+    // dr_mp3's PCM frame contains one sample per channel
+    Uint64 toRead = std::min(maxCount, m_numSamples - m_position) / m_decoder.channels;
+    toRead = static_cast<Uint64>(drmp3_read_pcm_frames_s16(&m_decoder, toRead, samples)) * m_decoder.channels;
     m_position += toRead;
     return toRead;
 }

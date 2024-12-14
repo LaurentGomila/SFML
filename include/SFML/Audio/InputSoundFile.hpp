@@ -66,11 +66,6 @@ public:
     /// The supported audio formats are: WAV (PCM only), OGG/Vorbis, FLAC, MP3.
     /// The supported sample sizes for FLAC and WAV are 8, 16, 24 and 32 bit.
     ///
-    /// Because of minimp3_ex limitation, for MP3 files with big (>16kb) APEv2 tag,
-    /// it may not be properly removed, tag data will be treated as MP3 data
-    /// and there is a low chance of garbage decoded at the end of file.
-    /// See also: https://github.com/lieff/minimp3
-    ///
     /// \param filename Path of the sound file to load
     ///
     /// \return True if the file was successfully opened
