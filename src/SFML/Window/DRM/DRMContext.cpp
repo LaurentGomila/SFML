@@ -33,6 +33,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <fcntl.h>
 #include <poll.h>
 #include <unistd.h>
@@ -314,6 +315,74 @@ namespace
         return fileDescriptor;
     }
 
+    const char *getConnectorTypeName(uint32_t connector_type)
+    {
+        // Ideally we would use drmModeGetConnectorTypeName() (added in 2022 to libdrm v2.4.112) as a drop
+        // in replacement for this function...
+        //
+        // see: https://gitlab.freedesktop.org/mesa/drm/-/commit/50f8d517733d24fce6693ffae552f9833e2e6aa9
+        //
+        switch (connector_type)
+        {
+            case DRM_MODE_CONNECTOR_Unknown:
+                return "Unknown";
+            case DRM_MODE_CONNECTOR_VGA:
+                return "VGA";
+            case DRM_MODE_CONNECTOR_DVII:
+                return "DVI-I";
+            case DRM_MODE_CONNECTOR_DVID:
+                return "DVI-D";
+            case DRM_MODE_CONNECTOR_DVIA:
+                return "DVI-A";
+            case DRM_MODE_CONNECTOR_Composite:
+                return "Composite";
+            case DRM_MODE_CONNECTOR_SVIDEO:
+                return "SVIDEO";
+            case DRM_MODE_CONNECTOR_LVDS:
+                return "LVDS";
+            case DRM_MODE_CONNECTOR_Component:
+                return "Component";
+            case DRM_MODE_CONNECTOR_9PinDIN:
+                return "DIN";
+            case DRM_MODE_CONNECTOR_DisplayPort:
+                return "DP";
+            case DRM_MODE_CONNECTOR_HDMIA:
+                return "HDMI-A";
+            case DRM_MODE_CONNECTOR_HDMIB:
+                return "HDMI-B";
+            case DRM_MODE_CONNECTOR_TV:
+                return "TV";
+            case DRM_MODE_CONNECTOR_eDP:
+                return "eDP";
+#ifdef DRM_MODE_CONNECTOR_VIRTUAL
+            case DRM_MODE_CONNECTOR_VIRTUAL:
+                return "Virtual";
+#endif
+#ifdef DRM_MODE_CONNECTOR_DSI
+            case DRM_MODE_CONNECTOR_DSI:
+                return "DSI";
+#endif
+#ifdef DRM_MODE_CONNECTOR_DPI
+            case DRM_MODE_CONNECTOR_DPI:
+                return "DPI";
+#endif
+#ifdef DRM_MODE_CONNECTOR_WRITEBACK
+            case DRM_MODE_CONNECTOR_WRITEBACK:
+                return "Writeback";
+#endif
+#ifdef DRM_MODE_CONNECTOR_SPI
+            case DRM_MODE_CONNECTOR_SPI:
+                return "SPI";
+#endif
+#ifdef DRM_MODE_CONNECTOR_USB
+            case DRM_MODE_CONNECTOR_USB:
+                return "USB";
+#endif
+            default:
+                return NULL;
+        }
+    }
+
     int initDrm()
     {
         if (initialized)
@@ -347,18 +416,55 @@ namespace
             return -1;
         }
 
-        // Find a connected connector:
+        // Use environment variable "SFML_DRM_CONNECTOR" to select the connector to use.  If
+        // that variable is not set, we connect to the first connected connector that we find
+        //
+        // Use the same connector naming convention as the modetest command: <type>-<type_id>
+        // (e.g. HDMI-A-2, eDP-1, etc.)
         drmModeConnectorPtr connector = NULL;
-        for (int i = 0; i < resources->count_connectors; ++i)
+
+        char* connectorStr = std::getenv("SFML_DRM_CONNECTOR");
+        if (connectorStr && *connectorStr)
         {
-            connector = drmModeGetConnector(drmNode.fileDescriptor, resources->connectors[i]);
-            if (connector->connection == DRM_MODE_CONNECTED)
+            for (int i = 0; i < resources->count_connectors; ++i)
             {
-                // It's connected, let's use this!
-                break;
+                connector = drmModeGetConnector(drmNode.fileDescriptor, resources->connectors[i]);
+
+                std::string n;
+
+                const char *tnStr = getConnectorTypeName(connector->connector_type);
+                if (!tnStr) // fallback to raw value if tnStr is NULL
+                    n = std::to_string(connector->connector_type);
+                else
+                    n = tnStr;
+
+                n += "-";
+                n += std::to_string(connector->connector_type_id);
+
+                if (( n.compare(connectorStr) == 0 ) && ( connector->connection == DRM_MODE_CONNECTED))
+                    break;
+
+                drmModeFreeConnector(connector);
+                connector = NULL;
             }
-            drmModeFreeConnector(connector);
-            connector = NULL;
+            if (!connector)
+                sf::err() << "Could not connect to specified SFML_DRM_CONNECTOR: " << connectorStr << std::endl;
+        }
+
+        // if we don't have a connector yet, find the first connected connector
+        if (!connector)
+        {
+            for (int i = 0; i < resources->count_connectors; ++i)
+            {
+                connector = drmModeGetConnector(drmNode.fileDescriptor, resources->connectors[i]);
+
+                if (connector->connection == DRM_MODE_CONNECTED)
+                    // It's connected, let's use this!
+                    break;
+
+                drmModeFreeConnector(connector);
+                connector = NULL;
+            }
         }
 
         if (!connector)
@@ -367,6 +473,11 @@ namespace
             sf::err() << "No connected connector!" << std::endl;
             return -1;
         }
+
+#ifdef SFML_DEBUG
+        const char *tnStr = getConnectorTypeName(connector->connector_type);
+        sf::err() << "DRM connector used: " << (tnStr ? tnStr : "Unknown") << "-" << connector->connector_type_id << std::endl;
+#endif
 
         // Find encoder:
         drmModeEncoderPtr encoder = NULL;
