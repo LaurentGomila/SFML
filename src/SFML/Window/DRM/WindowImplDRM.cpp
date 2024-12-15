@@ -50,6 +50,7 @@ WindowImplDRM::WindowImplDRM(VideoMode mode, const String& /*title*/, unsigned l
 m_size(mode.width, mode.height)
 {
     sf::priv::InputImpl::setTerminalConfig();
+    DRMContext::setCursorBounds(Vector2u(mode.width,mode.height));
 }
 
 
@@ -88,8 +89,10 @@ Vector2u WindowImplDRM::getSize() const
 
 
 ////////////////////////////////////////////////////////////
-void WindowImplDRM::setSize(const Vector2u& /*size*/)
+void WindowImplDRM::setSize(const Vector2u& size)
 {
+    m_size=size;
+    DRMContext::setCursorBounds(m_size);
 }
 
 
@@ -111,21 +114,20 @@ void WindowImplDRM::setVisible(bool /*visible*/)
 }
 
 ////////////////////////////////////////////////////////////
-void WindowImplDRM::setMouseCursorVisible(bool /*visible*/)
+void WindowImplDRM::setMouseCursorVisible(bool visible)
 {
-    // TODO: not implemented
+    DRMContext::setCursorVisible(visible);
 }
 
 ////////////////////////////////////////////////////////////
 void WindowImplDRM::setMouseCursorGrabbed(bool /*grabbed*/)
 {
-    //TODO: not implemented
 }
 
 ////////////////////////////////////////////////////////////
-void WindowImplDRM::setMouseCursor(const CursorImpl& /*cursor*/)
+void WindowImplDRM::setMouseCursor(const CursorImpl& cursor)
 {
-    // TODO: not implemented
+    DRMContext::setUserCursor(cursor);
 }
 
 ////////////////////////////////////////////////////////////

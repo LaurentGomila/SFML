@@ -33,6 +33,7 @@
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/WindowStyle.hpp> // Prevent conflict with macro None from Xlib
 
+#include <gbm.h>
 
 namespace sf
 {
@@ -80,35 +81,16 @@ public:
 
 private:
 
-    friend class WindowImplDRM;
-
-    ////////////////////////////////////////////////////////////
-    /// \brief Checks if colored cursors are supported for this display.
-    ///
-    ////////////////////////////////////////////////////////////
-    bool isColorCursorSupported();
-
-    ////////////////////////////////////////////////////////////
-    /// \brief Create a cursor with the provided image (ARGB support)
-    ///
-    /// Refer to sf::Cursor::loadFromPixels().
-    ///
-    ////////////////////////////////////////////////////////////
-    bool loadFromPixelsARGB(const Uint8* pixels, Vector2u size, Vector2u hotspot);
-
-    ////////////////////////////////////////////////////////////
-    /// \brief Create a cursor with the provided image (monochrome)
-    ///
-    /// Refer to sf::Cursor::loadFromPixels().
-    ///
-    ////////////////////////////////////////////////////////////
-    bool loadFromPixelsMonochrome(const Uint8* pixels, Vector2u size, Vector2u hotspot);
+    friend class DRMContext;
 
     ////////////////////////////////////////////////////////////
     /// \brief Release the cursor, if we have loaded one.
     ///
     ////////////////////////////////////////////////////////////
     void release();
+
+    gbm_bo *m_bo;
+    Vector2u m_hotspot;
 };
 
 } // namespace priv

@@ -26,6 +26,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/Window/DRM/InputImplUDev.hpp>
+#include <SFML/Window/DRM/DRMContext.hpp>
 #include <SFML/System/Err.hpp>
 #include <SFML/System/Lock.hpp>
 #include <SFML/System/Mutex.hpp>
@@ -60,7 +61,6 @@ namespace
     };
 
     sf::Mutex         inputMutex;                              // threadsafe? maybe...
-    sf::Vector2i      mousePos;                                // current mouse position
 
     std::vector<int>  fileDescriptors;                         // list of open file descriptors for /dev/input
     std::vector<bool> mouseMap(sf::Mouse::ButtonCount, false); // track whether keys are down
@@ -120,7 +120,6 @@ namespace
         bool is_mouse = (is_abs || is_rel) && TEST_BIT(BTN_MOUSE, bitmask_key);
 
         bool is_touch = is_abs && (TEST_BIT(BTN_TOOL_FINGER, bitmask_key) || TEST_BIT(BTN_TOUCH, bitmask_key));
-
         return is_keyboard || is_mouse || is_touch;
     }
 
@@ -359,6 +358,7 @@ namespace
         }
 
         ssize_t bytesRead;
+        sf::Vector2i mousePos = sf::priv::DRMContext::getCursorPos();
 
         // Check all the open file descriptors for the next event
         for (std::vector<int>::iterator itr = fileDescriptors.begin(); itr != fileDescriptors.end(); ++itr)
@@ -448,6 +448,8 @@ namespace
                     if (posChange)
                     {
                         event.type = sf::Event::MouseMoved;
+                        sf::priv::DRMContext::setCursorPos( mousePos );
+                        mousePos = sf::priv::DRMContext::getCursorPos();
                         event.mouseMove.x = mousePos.x;
                         event.mouseMove.y = mousePos.y;
                         return true;
@@ -627,7 +629,7 @@ bool InputImpl::isMouseButtonPressed(Mouse::Button button)
 Vector2i InputImpl::getMousePosition()
 {
     Lock lock(inputMutex);
-    return mousePos;
+    return sf::priv::DRMContext::getCursorPos();
 }
 
 
@@ -642,7 +644,7 @@ Vector2i InputImpl::getMousePosition(const WindowBase& /*relativeTo*/)
 void InputImpl::setMousePosition(const Vector2i& position)
 {
     Lock lock(inputMutex);
-    mousePos = position;
+    sf::priv::DRMContext::setCursorPos( position );
 }
 
 

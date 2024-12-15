@@ -28,6 +28,7 @@
 ////////////////////////////////////////////////////////////
 #include <SFML/Window/DRM/DRMContext.hpp>
 #include <SFML/Window/DRM/WindowImplDRM.hpp>
+#include <SFML/Window/DRM/CursorImpl.hpp>
 #include <SFML/System/Err.hpp>
 #include <SFML/System/Sleep.hpp>
 #include <cerrno>
@@ -62,6 +63,12 @@ namespace
     int contextCount = 0;
     EGLDisplay display = EGL_NO_DISPLAY;
     int waitingForFlip = 0;
+    sf::Vector2i mousePos; // current mouse position
+    sf::Vector2u mouseBounds;
+    bool mouseVisible = false;
+    int mouseVAdjust = 0;
+    sf::priv::CursorImpl *mouseDefaultCursor = NULL;
+    const sf::priv::CursorImpl *mouseUserCursor = NULL;
 
     static void pageFlipHandler(int fd, unsigned int frame,
         unsigned int sec, unsigned int usec, void* data)
@@ -102,6 +109,8 @@ namespace
         if (!initialized)
             return;
 
+        drmModeSetCursor(drmNode.fileDescriptor, drmNode.crtcId, 0, 0, 0 );
+
         drmModeSetCrtc(drmNode.fileDescriptor,
                        drmNode.originalCrtc->crtc_id,
                        drmNode.originalCrtc->buffer_id,
@@ -118,6 +127,12 @@ namespace
         eglTerminate(display);
         display = EGL_NO_DISPLAY;
 
+        if ( mouseDefaultCursor )
+        {
+            delete mouseDefaultCursor;
+            mouseDefaultCursor=NULL;
+        }
+
         gbm_device_destroy(gbmDevice);
         gbmDevice = NULL;
 
@@ -130,6 +145,9 @@ namespace
         std::memset(&drmEventCtx, 0, sizeof(drmEventContext));
 
         waitingForFlip = 0;
+        mouseVisible = false;
+        mouseUserCursor = NULL; // user is responsible for destruction of this
+        mouseVAdjust = 0;
 
         initialized = false;
     }
@@ -872,6 +890,112 @@ Drm& DRMContext::getDRM()
     initDrm();
     return drmNode;
 }
+
+gbm_device *DRMContext::getGbmDevice()
+{
+    initDrm();
+    return gbmDevice;
+}
+
+sf::Vector2i DRMContext::getCursorPos()
+{
+    sf::Vector2i temp=mousePos;
+    temp.y -= mouseVAdjust;
+    return temp;
+}
+
+void DRMContext::setCursorPos( const sf::Vector2i &pos )
+{
+    sf::Vector2i temp=pos;
+
+    if (temp.x > static_cast<int>(mouseBounds.x))
+       temp.x = static_cast<int>(mouseBounds.x);
+    else if (temp.x < 0)
+        temp.x=0;
+
+    temp.y += mouseVAdjust;
+
+    if (temp.y > static_cast<int>(mouseBounds.y) + mouseVAdjust)
+       temp.y = static_cast<int>(mouseBounds.y) + mouseVAdjust;
+    else if (temp.y < mouseVAdjust)
+        temp.y=mouseVAdjust;
+
+    mousePos=temp;
+    drmModeMoveCursor( drmNode.fileDescriptor, drmNode.crtcId, mousePos.x, mousePos.y );
+}
+
+void DRMContext::setCursorBounds( const sf::Vector2u &bound )
+{
+    sf::Vector2u temp=bound;
+    mouseVAdjust=0;
+    if (drmNode.mode)
+    {
+        if (temp.x > drmNode.mode->hdisplay)
+           temp.x = drmNode.mode->hdisplay;
+        if (temp.y > drmNode.mode->vdisplay)
+           temp.y = drmNode.mode->vdisplay;
+
+        mouseVAdjust=static_cast<int>(drmNode.mode->vdisplay - temp.y);
+    }
+
+    mouseBounds=temp;
+    setCursorPos( getCursorPos() );
+}
+
+void DRMContext::setCursorVisible( bool vis )
+{
+    bool update = ( vis != mouseVisible );
+    mouseVisible = vis;
+
+    if (update)
+        updateCursorDisplay();
+}
+
+void DRMContext::setUserCursor( const CursorImpl &cur )
+{
+    bool update = mouseVisible && ( mouseUserCursor != &cur );
+    mouseUserCursor = &cur;
+
+    if (update)
+        updateCursorDisplay();
+}
+
+void DRMContext::updateCursorDisplay()
+{
+    const CursorImpl *p = mouseUserCursor;
+    if (!p || !p->m_bo)
+    {
+        if (!mouseDefaultCursor)
+        {
+            mouseDefaultCursor = new CursorImpl();
+            if (!mouseDefaultCursor->loadFromSystem(sf::Cursor::Type::Arrow))
+            {
+                sf::err() << "Error loading default cursor." << std::endl;
+            }
+        }
+        p=mouseDefaultCursor;
+    }
+
+    int ret;
+
+    if (!(p->m_bo) || !mouseVisible)
+    {
+        ret = drmModeSetCursor(drmNode.fileDescriptor, drmNode.crtcId, 0, 0, 0 );
+    }
+    else
+    {
+        setCursorPos(getCursorPos());
+        ret = drmModeSetCursor2(drmNode.fileDescriptor, drmNode.crtcId, gbm_bo_get_handle(p->m_bo).u32,
+                        gbm_bo_get_width(p->m_bo), gbm_bo_get_height(p->m_bo), static_cast<int32_t>(p->m_hotspot.x),
+                        static_cast<int32_t>(p->m_hotspot.y));
+    }
+
+    if (ret)
+    {
+        sf::err() << "drmModeSetCursor failed to set cursor: " << strerror(errno) << std::endl;
+    }
+}
+
 
 } // namespace priv
 

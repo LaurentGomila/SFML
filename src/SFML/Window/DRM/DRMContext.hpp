@@ -33,6 +33,7 @@
 #include <SFML/Window/EGLCheck.hpp>
 #include <SFML/Window/GlContext.hpp>
 #include <SFML/Window/VideoMode.hpp>
+#include <SFML/System/Vector2.hpp>
 #include <glad/egl.h>
 #include <gbm.h>
 #include <xf86drmMode.h>
@@ -57,6 +58,7 @@ struct Drm
 };
 
 class WindowImplDRM;
+class CursorImpl;
 
 class DRMContext : public GlContext
 {
@@ -178,16 +180,17 @@ public:
     ////////////////////////////////////////////////////////////
     static GlFunctionPointer getFunction(const char* name);
 
-protected:
-
-    friend class VideoModeImpl;
-    friend class WindowImplDRM;
-
     ////////////////////////////////////////////////////////////
     /// \brief Get Direct Rendering Manager pointer
     ///
     ////////////////////////////////////////////////////////////
     static Drm& getDRM();
+    static gbm_device *getGbmDevice();
+    static sf::Vector2i getCursorPos();
+    static void setCursorPos( const sf::Vector2i &pos );
+    static void setCursorBounds( const sf::Vector2u &bounds );
+    static void setCursorVisible( bool vis );
+    static void setUserCursor( const CursorImpl &cur );
 
 private:
 
@@ -196,6 +199,7 @@ private:
     ///
     ////////////////////////////////////////////////////////////
     void updateSettings();
+    static void updateCursorDisplay();
 
     ////////////////////////////////////////////////////////////
     // Member data
