@@ -26,8 +26,13 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML/System/Err.hpp>
+#include <SFML/System/Lock.hpp>
+#include <SFML/System/Mutex.hpp>
+#include <SFML/System/ThreadLocalPtr.hpp>
+#include <SFML/System/NonCopyable.hpp>
 #include <streambuf>
 #include <cstdio>
+#include <vector>
 
 
 namespace
@@ -93,6 +98,59 @@ private:
         return 0;
     }
 };
+
+// No-op buffer
+class NullBuffer : public std::streambuf
+{
+public:
+
+    int overflow(int character)
+    {
+        return character;
+    }
+};
+
+// Groups a std::ostream with its std::streambuf
+struct ThreadLocalErr : sf::NonCopyable
+{
+    DefaultErrStreamBuf buffer;
+    std::ostream stream;
+
+    ThreadLocalErr() :
+    buffer(),
+    stream(&buffer)
+    {
+    }
+};
+
+// Note: the below contraption makes thread-safe usage of sf::err() possible, however it relies 
+// on several global variables to be alive when used (i.e. initialized and not yet destroyed).
+// If sf::err() is called during global init/exit, UB might occur. There is a check for invocations
+// during global exit, but it's best-effort and will leak memory.
+
+typedef sf::ThreadLocalPtr<ThreadLocalErr>   ErrPtr;
+
+ErrPtr                       currentErr(NULL);   //< Per-thread variable holds the current instance of DefaultErrStreamBuf
+std::vector<ThreadLocalErr*> activePtrs;         //< Pointers to Err objects across all threads
+bool                         isAtexitRegistered; //< Whether the global cleanup has been initialized
+bool                         isAtexitExecuted;   //< Whether the global cleanup has run
+sf::Mutex                    mutex;              //< Synchronize access to the above book-keeping
+
+// Function called at program exit, destroys all active ThreadLocalErr instances
+void destroyErrs()
+{
+    // Note: since this function has been registered with atexit() *after* the above global variables
+    // have been initialized*, it should be invoked *before* they are destroyed, ensuring their liveness.
+    // ______
+    // * that is, unless err() is called during global init, in which case nothing is guaranteed (likely UB).
+
+    for (std::vector<ThreadLocalErr*>::iterator it = activePtrs.begin(); it != activePtrs.end(); ++it)
+        delete *it;
+
+    activePtrs.clear();
+    isAtexitExecuted = true;
+}
+
 }
 
 namespace sf
@@ -100,11 +158,35 @@ namespace sf
 ////////////////////////////////////////////////////////////
 std::ostream& err()
 {
-    static DefaultErrStreamBuf buffer;
-    static std::ostream stream(&buffer);
+    // Note: access not synchronized, to not incur locking on every err() invocation.
+    if (isAtexitExecuted)
+    {
+        // Last resort if err() is called after the thread-local instance has been destroyed.
+        // If this happens, all that counts is avoiding UB and data races, so the stream
+        // will leak memory and won't be operational (standard facilities might anyway be in
+        // the process of destruction).
+        NullBuffer* buf = new NullBuffer();
+        return *new std::ostream(buf);
+    }
 
-    return stream;
+    // Lazy-initialize thread-local Err provider
+    if (currentErr == NULL)
+    {
+        sf::Lock lock(mutex);
+
+        ThreadLocalErr* newErr = new ThreadLocalErr();
+
+        currentErr = newErr;
+        activePtrs.push_back(newErr);
+
+        if (!isAtexitRegistered)
+        {
+            std::atexit(&destroyErrs);
+            isAtexitRegistered = true;
+        }
+    }
+
+    return currentErr->stream;
 }
-
 
 } // namespace sf
