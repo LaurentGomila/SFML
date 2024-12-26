@@ -37,12 +37,14 @@
 namespace
 {
 // Compute the normal of a segment
-sf::Vector2f computeNormal(sf::Vector2f p1, sf::Vector2f p2)
+sf::Vector2f computeNormal(sf::Vector2f p1, sf::Vector2f p2, bool flipped)
 {
     sf::Vector2f normal = (p2 - p1).perpendicular();
     const float  length = normal.length();
     if (length != 0.f)
         normal /= length;
+    if (flipped)
+        normal = -normal;
     return normal;
 }
 } // namespace
@@ -291,6 +293,15 @@ void Shape::updateOutline()
     const std::size_t count = m_vertices.getVertexCount() - 2;
     m_outlineVertices.resize((count + 1) * 2);
 
+    // Determine if points are defined clockwise or counterclockwise. This will impact normals computation.
+    const bool flipNormals = [this, count]()
+    {
+        float twiceArea = 0.f;
+        for (std::size_t i = 0; i < count; ++i)
+            twiceArea += m_vertices[i + 1].position.cross(m_vertices[i + 2].position);
+        return twiceArea >= 0.f;
+    }();
+
     for (std::size_t i = 0; i < count; ++i)
     {
         const std::size_t index = i + 1;
@@ -300,16 +311,9 @@ void Shape::updateOutline()
         const Vector2f p1 = m_vertices[index].position;
         const Vector2f p2 = m_vertices[index + 1].position;
 
-        // Compute their normal
-        Vector2f n1 = computeNormal(p0, p1);
-        Vector2f n2 = computeNormal(p1, p2);
-
-        // Make sure that the normals point towards the outside of the shape
-        // (this depends on the order in which the points were defined)
-        if (n1.dot(m_vertices[0].position - p1) > 0)
-            n1 = -n1;
-        if (n2.dot(m_vertices[0].position - p1) > 0)
-            n2 = -n2;
+        // Compute their normal pointing towards the outside of the shape
+        const Vector2f n1 = computeNormal(p0, p1, flipNormals);
+        const Vector2f n2 = computeNormal(p1, p2, flipNormals);
 
         // Combine them to get the extrusion direction
         const float    factor = 1.f + (n1.x * n2.x + n1.y * n2.y);
