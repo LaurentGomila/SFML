@@ -60,6 +60,7 @@ TEST_CASE("[Graphics] sf::Shape", runDisplayTests())
         CHECK(triangleShape.getFillColor() == sf::Color::White);
         CHECK(triangleShape.getOutlineColor() == sf::Color::White);
         CHECK(triangleShape.getOutlineThickness() == 0.0f);
+        CHECK(triangleShape.getMiterLimit() == 10.0f);
         CHECK(triangleShape.getLocalBounds() == sf::FloatRect());
         CHECK(triangleShape.getGlobalBounds() == sf::FloatRect());
     }
@@ -100,6 +101,13 @@ TEST_CASE("[Graphics] sf::Shape", runDisplayTests())
         CHECK(triangleShape.getOutlineThickness() == 3.14f);
     }
 
+    SECTION("Set/get miter limit")
+    {
+        TriangleShape triangleShape({});
+        triangleShape.setMiterLimit(6.28f);
+        CHECK(triangleShape.getMiterLimit() == 6.28f);
+    }
+
     SECTION("Virtual functions: getPoint, getPointCount, getGeometricCenter")
     {
         const TriangleShape triangleShape({2, 2});
@@ -129,6 +137,14 @@ TEST_CASE("[Graphics] sf::Shape", runDisplayTests())
             triangleShape.setOutlineThickness(5);
             CHECK(triangleShape.getLocalBounds() == Approx(sf::FloatRect({-7.2150f, -14.2400f}, {44.4300f, 59.2400f})));
             CHECK(triangleShape.getGlobalBounds() == Approx(sf::FloatRect({-7.2150f, -14.2400f}, {44.4300f, 59.2400f})));
+        }
+
+        SECTION("Add beveled outline")
+        {
+            triangleShape.setMiterLimit(2);
+            triangleShape.setOutlineThickness(5);
+            CHECK(triangleShape.getLocalBounds() == Approx(sf::FloatRect({-7.2150f, -10.f}, {44.4300f, 55.f})));
+            CHECK(triangleShape.getGlobalBounds() == Approx(sf::FloatRect({-7.2150f, -10.f}, {44.4300f, 55.f})));
         }
     }
 }

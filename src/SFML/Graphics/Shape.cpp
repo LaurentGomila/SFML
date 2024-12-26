@@ -32,20 +32,19 @@
 #include <algorithm>
 
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 
 namespace
 {
-// Compute the normal of a segment
-sf::Vector2f computeNormal(sf::Vector2f p1, sf::Vector2f p2, bool flipped)
+// Compute the direction of a segment
+sf::Vector2f computeDirection(sf::Vector2f p1, sf::Vector2f p2)
 {
-    sf::Vector2f normal = (p2 - p1).perpendicular();
-    const float  length = normal.length();
+    sf::Vector2f direction = p2 - p1;
+    const float  length    = direction.length();
     if (length != 0.f)
-        normal /= length;
-    if (flipped)
-        normal = -normal;
-    return normal;
+        direction /= length;
+    return direction;
 }
 } // namespace
 
@@ -123,7 +122,7 @@ Color Shape::getOutlineColor() const
 void Shape::setOutlineThickness(float thickness)
 {
     m_outlineThickness = thickness;
-    update(); // recompute everything because the whole shape must be offset
+    updateOutline();
 }
 
 
@@ -131,6 +130,22 @@ void Shape::setOutlineThickness(float thickness)
 float Shape::getOutlineThickness() const
 {
     return m_outlineThickness;
+}
+
+
+////////////////////////////////////////////////////////////
+void Shape::setMiterLimit(float miterLimit)
+{
+    assert(miterLimit >= 1.f && "Shape::setMiterLimit(float) cannot set miter limit to a value lower than 1");
+    m_miterLimit = miterLimit;
+    updateOutline();
+}
+
+
+////////////////////////////////////////////////////////////
+float Shape::getMiterLimit() const
+{
+    return m_miterLimit;
 }
 
 
@@ -282,8 +297,8 @@ void Shape::updateTexCoords()
 ////////////////////////////////////////////////////////////
 void Shape::updateOutline()
 {
-    // Return if there is no outline
-    if (m_outlineThickness == 0.f)
+    // Return if there is no outline or no vertices
+    if (m_outlineThickness == 0.f || m_vertices.getVertexCount() < 2)
     {
         m_outlineVertices.clear();
         m_bounds = m_insideBounds;
@@ -291,7 +306,8 @@ void Shape::updateOutline()
     }
 
     const std::size_t count = m_vertices.getVertexCount() - 2;
-    m_outlineVertices.resize((count + 1) * 2);
+    m_outlineVertices.resize((count + 1) * 2); // We need at least that many vertices.
+                                               // We will add two more vertices each time we need a bevel.
 
     // Determine if points are defined clockwise or counterclockwise. This will impact normals computation.
     const bool flipNormals = [this, count]()
@@ -302,6 +318,7 @@ void Shape::updateOutline()
         return twiceArea >= 0.f;
     }();
 
+    std::size_t outlineIndex = 0;
     for (std::size_t i = 0; i < count; ++i)
     {
         const std::size_t index = i + 1;
@@ -311,22 +328,55 @@ void Shape::updateOutline()
         const Vector2f p1 = m_vertices[index].position;
         const Vector2f p2 = m_vertices[index + 1].position;
 
+        // Compute their direction
+        const Vector2f d1 = computeDirection(p0, p1);
+        const Vector2f d2 = computeDirection(p1, p2);
+
         // Compute their normal pointing towards the outside of the shape
-        const Vector2f n1 = computeNormal(p0, p1, flipNormals);
-        const Vector2f n2 = computeNormal(p1, p2, flipNormals);
+        const Vector2f n1 = flipNormals ? -d1.perpendicular() : d1.perpendicular();
+        const Vector2f n2 = flipNormals ? -d2.perpendicular() : d2.perpendicular();
 
-        // Combine them to get the extrusion direction
-        const float    factor = 1.f + (n1.x * n2.x + n1.y * n2.y);
-        const Vector2f normal = (n1 + n2) / factor;
+        // Decide whether to add a bevel or not
+        const float twoCos2            = 1.f + n1.dot(n2);
+        const float squaredLengthRatio = m_miterLimit * m_miterLimit * twoCos2 / 2.f;
+        const bool  isConvexCorner     = d1.dot(n2) * m_outlineThickness >= 0.f;
+        const bool  needsBevel         = twoCos2 == 0.f || (squaredLengthRatio < 1.f && isConvexCorner);
 
-        // Update the outline points
-        m_outlineVertices[i * 2 + 0].position = p1;
-        m_outlineVertices[i * 2 + 1].position = p1 + normal * m_outlineThickness;
+        if (needsBevel)
+        {
+            // Make room for two more vertices
+            m_outlineVertices.resize(m_outlineVertices.getVertexCount() + 2);
+
+            // Combine normals to get bevel edge's direction and normal vector pointing towards the outside of the shape
+            const float    twoSin2   = 1.f - n1.dot(n2);
+            const Vector2f direction = (n2 - n1) / twoSin2; // Length is 1 / sin
+            const Vector2f extrusion = (flipNormals != (d1.dot(n2) >= 0.f) ? direction : -direction).perpendicular();
+
+            // Compute bevel corner position in (direction, extrusion) coordinates
+            const float sin = std::sqrt(twoSin2 / 2.f);
+            const float u   = m_miterLimit * sin;
+            const float v   = 1.f - std::sqrt(squaredLengthRatio);
+
+            // Update the outline points
+            m_outlineVertices[outlineIndex++].position = p1;
+            m_outlineVertices[outlineIndex++].position = p1 + (u * extrusion - v * direction) * m_outlineThickness;
+            m_outlineVertices[outlineIndex++].position = p1;
+            m_outlineVertices[outlineIndex++].position = p1 + (u * extrusion + v * direction) * m_outlineThickness;
+        }
+        else
+        {
+            // Combine normals to get the extrusion direction
+            const Vector2f extrusion = (n1 + n2) / twoCos2;
+
+            // Update the outline points
+            m_outlineVertices[outlineIndex++].position = p1;
+            m_outlineVertices[outlineIndex++].position = p1 + extrusion * m_outlineThickness;
+        }
     }
 
     // Duplicate the first point at the end, to close the outline
-    m_outlineVertices[count * 2 + 0].position = m_outlineVertices[0].position;
-    m_outlineVertices[count * 2 + 1].position = m_outlineVertices[1].position;
+    m_outlineVertices[outlineIndex++].position = m_outlineVertices[0].position;
+    m_outlineVertices[outlineIndex++].position = m_outlineVertices[1].position;
 
     // Update outline colors
     updateOutlineColors();
