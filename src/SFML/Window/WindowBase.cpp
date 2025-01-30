@@ -340,6 +340,14 @@ bool WindowBase::hasFocus() const
 
 
 ////////////////////////////////////////////////////////////
+void WindowBase::setImePreEditPosition(const Vector2i& position)
+{
+    if (m_impl)
+        m_impl->setImePreEditPosition(position);
+}
+
+
+////////////////////////////////////////////////////////////
 WindowHandle WindowBase::getNativeHandle() const
 {
     return m_impl ? m_impl->getNativeHandle() : WindowHandle{};

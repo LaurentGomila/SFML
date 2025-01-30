@@ -229,6 +229,13 @@ bool WindowImplAndroid::hasFocus() const
 
 
 ////////////////////////////////////////////////////////////
+void WindowImplAndroid::setImePreEditPosition(const Vector2i& /* position */)
+{
+    // Not applicable
+}
+
+
+////////////////////////////////////////////////////////////
 void WindowImplAndroid::forwardEvent(const Event& event)
 {
     if (WindowImplAndroid::singleInstance != nullptr)

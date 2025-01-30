@@ -188,6 +188,14 @@ bool WindowImplDRM::hasFocus() const
     return true;
 }
 
+
+////////////////////////////////////////////////////////////
+void WindowImplDRM::setImePreEditPosition(const Vector2i& /* position */)
+{
+    // Not applicable
+}
+
+
 void WindowImplDRM::processEvents()
 {
     while (const std::optional event = InputImpl::checkEvent())

@@ -294,6 +294,15 @@ public:
     [[nodiscard]] virtual bool hasFocus() const = 0;
 
     ////////////////////////////////////////////////////////////
+    /// \brief Set the position where the IME preedit window
+    ///        should show up
+    ///
+    /// \param position Left-top corner of the preedit window
+    ///
+    ////////////////////////////////////////////////////////////
+    virtual void setImePreEditPosition(const Vector2i& position) = 0;
+
+    ////////////////////////////////////////////////////////////
     /// \brief Create a Vulkan rendering surface
     ///
     /// \param instance  Vulkan instance

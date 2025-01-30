@@ -535,6 +535,23 @@ public:
     [[nodiscard]] bool hasFocus() const;
 
     ////////////////////////////////////////////////////////////
+    /// \brief Set the position where the IME preedit popup
+    ///        should show up
+    ///
+    /// The position specified is relative to the left-top
+    /// corner of the window area.
+    ///
+    /// It is implementation-specific what happens when negative
+    /// values are used. X11 handles them as you would expect,
+    /// but Windows sometimes resets the position to the top-left
+    /// of the screen.
+    ///
+    /// \param position Left-top corner of the preedit popup
+    ///
+    ////////////////////////////////////////////////////////////
+    void setImePreEditPosition(const Vector2i& position);
+
+    ////////////////////////////////////////////////////////////
     /// \brief Get the OS-specific handle of the window
     ///
     /// The type of the returned handle is `sf::WindowHandle`,

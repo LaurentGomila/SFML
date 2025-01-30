@@ -228,6 +228,13 @@ bool WindowImplUIKit::hasFocus() const
 
 
 ////////////////////////////////////////////////////////////
+void WindowImplUIKit::setImePreEditPosition(const Vector2i& /* position */)
+{
+    // Not applicable
+}
+
+
+////////////////////////////////////////////////////////////
 void WindowImplUIKit::forwardEvent(Event event)
 {
     if (event.is<Event::FocusGained>())

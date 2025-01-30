@@ -199,6 +199,15 @@ public:
     [[nodiscard]] bool hasFocus() const override;
 
     ////////////////////////////////////////////////////////////
+    /// \brief Set the position where the IME preedit window
+    ///        should show up
+    ///
+    /// \param position Left-top corner of the preedit window
+    ///
+    ////////////////////////////////////////////////////////////
+    void setImePreEditPosition(const Vector2i& position) override;
+
+    ////////////////////////////////////////////////////////////
     /// \brief Notify an event
     ///
     /// \param event Event to forward

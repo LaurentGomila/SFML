@@ -1229,6 +1229,16 @@ bool WindowImplX11::hasFocus() const
 
 
 ////////////////////////////////////////////////////////////
+void WindowImplX11::setImePreEditPosition(const Vector2i& position)
+{
+    const XPoint        xpos{static_cast<short>(position.x), static_cast<short>(position.y)};
+    const XVaNestedList preeditAttr = XVaCreateNestedList(0, XNSpotLocation, &xpos, NULL);
+    XSetICValues(m_inputContext, XNPreeditAttributes, preeditAttr, NULL);
+    XFree(preeditAttr);
+}
+
+
+////////////////////////////////////////////////////////////
 void WindowImplX11::grabFocus()
 {
     using namespace WindowImplX11Impl;

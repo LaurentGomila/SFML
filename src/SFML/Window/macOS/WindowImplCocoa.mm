@@ -493,4 +493,11 @@ bool WindowImplCocoa::hasFocus() const
 }
 
 
+////////////////////////////////////////////////////////////
+void WindowImplCocoa::setImePreEditPosition(const Vector2i& /* position */)
+{
+    // TODO: To implement
+}
+
+
 } // namespace sf::priv

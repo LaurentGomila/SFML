@@ -476,6 +476,21 @@ bool WindowImplWin32::hasFocus() const
 
 
 ////////////////////////////////////////////////////////////
+void WindowImplWin32::setImePreEditPosition(const Vector2i& position)
+{
+    if (HIMC himc = ImmGetContext(m_handle); himc != nullptr)
+    {
+        COMPOSITIONFORM cf;
+        cf.ptCurrentPos.x = static_cast<LONG>(position.x);
+        cf.ptCurrentPos.y = static_cast<LONG>(position.y);
+        cf.dwStyle        = CFS_FORCE_POSITION; // Don't let the IME adjust the position
+        ImmSetCompositionWindow(himc, &cf);
+        ImmReleaseContext(m_handle, himc);
+    }
+}
+
+
+////////////////////////////////////////////////////////////
 void WindowImplWin32::registerWindowClass()
 {
     WNDCLASSW windowClass;
