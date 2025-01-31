@@ -190,7 +190,8 @@ m_cursorGrabbed(m_fullscreen)
     DWORD win32Style = WS_VISIBLE;
     if (style == Style::None)
     {
-        win32Style |= WS_POPUP;
+        // You cannot spawn a window as a true borderless window. Remove the caption after creation.
+        win32Style |= WS_CAPTION;
     }
     else
     {
@@ -249,6 +250,14 @@ m_cursorGrabbed(m_fullscreen)
     // Switch to fullscreen if requested
     if (m_fullscreen)
         switchToFullscreen(mode);
+
+    if (style == Style::None)
+    {
+        // For a true borderless window, remove the titlebar now.
+        // from: https://github.com/Codeusa/Borderless-Gaming/blob/3cc4dc6bd580b263287be45981f1e36036daf4eb/BorderlessGaming.Logic/Windows/Manipulation.cs#L71-L94
+        constexpr long long borderlessStyleRemove = WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+        SetWindowLongPtr(m_handle, GWL_STYLE, GetWindowLongPtr(m_handle, GWL_STYLE) & ~borderlessStyleRemove);
+    }
 
     // Increment window count
     ++windowCount;
