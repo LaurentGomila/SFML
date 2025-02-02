@@ -108,7 +108,8 @@ public:
     ////////////////////////////////////////////////////////////
     /// \brief Open a sound file from the disk for reading
     ///
-    /// The supported audio formats are: WAV (PCM only), OGG/Vorbis, FLAC, MP3.
+    /// The supported audio formats are: WAV (PCM only), OGG/Vorbis, Opus,
+    /// FLAC, and MP3.
     /// The supported sample sizes for FLAC and WAV are 8, 16, 24 and 32 bit.
     ///
     /// Because of minimp3_ex limitation, for MP3 files with big (>16kb) APEv2 tag,
@@ -126,7 +127,8 @@ public:
     ////////////////////////////////////////////////////////////
     /// \brief Open a sound file in memory for reading
     ///
-    /// The supported audio formats are: WAV (PCM only), OGG/Vorbis, FLAC.
+    /// The supported audio formats are: WAV (PCM only), OGG/Vorbis, Opus,
+    /// FLAC, and MP3.
     /// The supported sample sizes for FLAC and WAV are 8, 16, 24 and 32 bit.
     ///
     /// \param data        Pointer to the file data in memory
@@ -140,7 +142,8 @@ public:
     ////////////////////////////////////////////////////////////
     /// \brief Open a sound file from a custom stream for reading
     ///
-    /// The supported audio formats are: WAV (PCM only), OGG/Vorbis, FLAC.
+    /// The supported audio formats are: WAV (PCM only), OGG/Vorbis, Opus,
+    /// FLAC, and MP3.
     /// The supported sample sizes for FLAC and WAV are 8, 16, 24 and 32 bit.
     ///
     /// \param stream Source stream to read from

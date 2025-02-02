@@ -29,6 +29,7 @@
 #include <SFML/Audio/SoundFileReaderFlac.hpp>
 #include <SFML/Audio/SoundFileReaderMp3.hpp>
 #include <SFML/Audio/SoundFileReaderOgg.hpp>
+#include <SFML/Audio/SoundFileReaderOpus.hpp>
 #include <SFML/Audio/SoundFileReaderWav.hpp>
 #include <SFML/Audio/SoundFileWriterFlac.hpp>
 #include <SFML/Audio/SoundFileWriterOgg.hpp>
@@ -144,6 +145,7 @@ SoundFileFactory::ReaderFactoryMap& SoundFileFactory::getReaderFactoryMap()
     static ReaderFactoryMap result{{&priv::createReader<priv::SoundFileReaderFlac>, &priv::SoundFileReaderFlac::check},
                                    {&priv::createReader<priv::SoundFileReaderMp3>, &priv::SoundFileReaderMp3::check},
                                    {&priv::createReader<priv::SoundFileReaderOgg>, &priv::SoundFileReaderOgg::check},
+                                   {&priv::createReader<priv::SoundFileReaderOpus>, &priv::SoundFileReaderOpus::check},
                                    {&priv::createReader<priv::SoundFileReaderWav>, &priv::SoundFileReaderWav::check}};
 
     return result;

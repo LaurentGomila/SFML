@@ -85,6 +85,9 @@ int main()
     // Play a sound
     playSound();
 
+    // Play music from an opus file
+    playMusic("error.opus");
+
     // Play music from an ogg file
     playMusic("doodle_pop.ogg");
 

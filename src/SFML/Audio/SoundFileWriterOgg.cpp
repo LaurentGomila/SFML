@@ -118,7 +118,7 @@ bool SoundFileWriterOgg::open(const std::filesystem::path&     filename,
             return false;
     }
 
-    // Check if the channel map contains channels that we cannot remap to a mapping supported by FLAC
+    // Check if the channel map contains channels that we cannot remap to a mapping supported by Vorbis
     if (!std::is_permutation(channelMap.begin(), channelMap.end(), targetChannelMap.begin()))
     {
         err() << "Provided channel map cannot be reordered to a channel map supported by Vorbis" << std::endl;

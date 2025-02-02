@@ -48,6 +48,8 @@ set(CODECS_SRC
     ${SRCROOT}/SoundFileReaderMp3.cpp
     ${SRCROOT}/SoundFileReaderOgg.hpp
     ${SRCROOT}/SoundFileReaderOgg.cpp
+    ${SRCROOT}/SoundFileReaderOpus.hpp
+    ${SRCROOT}/SoundFileReaderOpus.cpp
     ${SRCROOT}/SoundFileReaderWav.hpp
     ${SRCROOT}/SoundFileReaderWav.cpp
     ${INCROOT}/SoundFileWriter.hpp
@@ -55,6 +57,8 @@ set(CODECS_SRC
     ${SRCROOT}/SoundFileWriterFlac.cpp
     ${SRCROOT}/SoundFileWriterOgg.hpp
     ${SRCROOT}/SoundFileWriterOgg.cpp
+    ${SRCROOT}/SoundFileWriterOpus.hpp
+    ${SRCROOT}/SoundFileWriterOpus.cpp
     ${SRCROOT}/SoundFileWriterWav.hpp
     ${SRCROOT}/SoundFileWriterWav.cpp
 )
@@ -94,10 +98,23 @@ else()
         set(INSTALL_DOCS OFF)
         set(INSTALL_PKG_CONFIG_MODULE OFF)
         set(INSTALL_PKGCONFIG_MODULES OFF)
+        set(OPUS_INSTALL_PKG_CONFIG_MODULE OFF)
         set(WITH_FORTIFY_SOURCE OFF)
         set(WITH_STACK_PROTECTOR OFF)
         set(WITH_AVX OFF) # LLVM/Clang on Windows has issues with AVX2
+        SET(OP_DISABLE_HTTP ON)
+        SET(OP_DISABLE_EXAMPLES ON)
+        SET(OP_DISABLE_DOCS ON)
 
+        FetchContent_Declare(opus
+            GIT_REPOSITORY https://github.com/xiph/opus.git
+            GIT_TAG v1.5.2
+            GIT_SHALLOW ON
+            # patch out parts we don't want of the Opus CMake configuration
+            # - feature summary
+            # - installing headers
+            # - add CMAKE_DEBUG_POSTFIX
+            PATCH_COMMAND ${CMAKE_COMMAND} -DOPUS_DIR=${FETCHCONTENT_BASE_DIR}/opus-src -P ${PROJECT_SOURCE_DIR}/tools/opus/PatchOpus.cmake)
         FetchContent_Declare(ogg
             GIT_REPOSITORY https://github.com/xiph/ogg.git
             GIT_TAG v1.3.5
@@ -106,6 +123,13 @@ else()
             # - installing headers & pkgconfig files
             # - add CMAKE_DEBUG_POSTFIX
             PATCH_COMMAND ${CMAKE_COMMAND} -DOGG_DIR=${FETCHCONTENT_BASE_DIR}/ogg-src -P ${PROJECT_SOURCE_DIR}/tools/ogg/PatchOgg.cmake)
+        FetchContent_Declare(opusfile
+            GIT_REPOSITORY https://github.com/xiph/opusfile.git
+            GIT_TAG 9d718345ce03b2fad5d7d28e0bcd1cc69ab2b166
+            # patch out parts we don't want of the Opusfile CMake configuration
+            # - installing headers
+            # - add CMAKE_DEBUG_POSTFIX
+            PATCH_COMMAND ${CMAKE_COMMAND} -DOPUSFILE_DIR=${FETCHCONTENT_BASE_DIR}/opusfile-src -P ${PROJECT_SOURCE_DIR}/tools/opus/PatchOpusfile.cmake)
         FetchContent_Declare(flac
             GIT_REPOSITORY https://github.com/xiph/flac.git
             GIT_TAG 1.4.3
@@ -124,20 +148,22 @@ else()
             # - installing headers & pkgconfig files
             # - add CMAKE_DEBUG_POSTFIX
             PATCH_COMMAND ${CMAKE_COMMAND} -DVORBIS_DIR=${FETCHCONTENT_BASE_DIR}/vorbis-src -P ${PROJECT_SOURCE_DIR}/tools/vorbis/PatchVorbis.cmake)
-        FetchContent_MakeAvailable(ogg flac vorbis)
+        FetchContent_MakeAvailable(opus ogg opusfile flac vorbis)
 
-        set_target_properties(ogg FLAC vorbis vorbisenc vorbisfile PROPERTIES FOLDER "Dependencies")
+        set_target_properties(opus ogg opusfile FLAC vorbis vorbisenc vorbisfile PROPERTIES FOLDER "Dependencies")
 
         # if building SFML as a shared library and linking our dependencies in
         # as static libraries we need to build them with -fPIC
         if(SFML_BUILD_SHARED_LIBS)
-            set_target_properties(ogg FLAC vorbis vorbisenc vorbisfile PROPERTIES POSITION_INDEPENDENT_CODE ON)
+            set_target_properties(opus ogg opusfile FLAC vorbis vorbisenc vorbisfile PROPERTIES POSITION_INDEPENDENT_CODE ON)
         endif()
 
         # disable building dependencies as part of a unity build, they don't support it
-        set_target_properties(ogg FLAC vorbis vorbisenc vorbisfile PROPERTIES UNITY_BUILD OFF)
+        set_target_properties(opus ogg opusfile FLAC vorbis vorbisenc vorbisfile PROPERTIES UNITY_BUILD OFF)
 
+        sfml_set_stdlib(opus)
         sfml_set_stdlib(ogg)
+        sfml_set_stdlib(opusfile)
         sfml_set_stdlib(FLAC)
         sfml_set_stdlib(vorbis)
         sfml_set_stdlib(vorbisenc)
@@ -181,7 +207,7 @@ target_compile_definitions(sfml-audio PRIVATE SFML_IS_BIG_ENDIAN=$<STREQUAL:${CM
 # setup dependencies
 target_link_libraries(sfml-audio
                       PUBLIC SFML::System
-                      PRIVATE Vorbis::vorbis Vorbis::vorbisfile Vorbis::vorbisenc FLAC::FLAC Threads::Threads)
+                      PRIVATE Vorbis::vorbis Vorbis::vorbisfile Vorbis::vorbisenc FLAC::FLAC OpusFile::opusfile Threads::Threads)
 if(SFML_OS_IOS)
     target_link_libraries(sfml-audio PRIVATE "-framework Foundation" "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox" "-framework AVFoundation")
 endif()
