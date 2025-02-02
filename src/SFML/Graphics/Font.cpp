@@ -407,6 +407,48 @@ float Font::getKerning(std::uint32_t first, std::uint32_t second, unsigned int c
 
 
 ////////////////////////////////////////////////////////////
+float Font::getAscent(unsigned int characterSize) const
+{
+    assert(m_fontHandles);
+
+    FT_Face face = m_fontHandles->face;
+
+    if (setCurrentSize(characterSize))
+    {
+        if (!FT_IS_SCALABLE(face))
+            return static_cast<float>(face->size->metrics.ascender) / static_cast<float>(1 << 6);
+
+        return static_cast<float>(FT_MulFix(face->ascender, face->size->metrics.y_scale)) / static_cast<float>(1 << 6);
+    }
+    else
+    {
+        return 0.f;
+    }
+}
+
+
+////////////////////////////////////////////////////////////
+float Font::getDescent(unsigned int characterSize) const
+{
+    assert(m_fontHandles);
+
+    FT_Face face = m_fontHandles->face;
+
+    if (setCurrentSize(characterSize))
+    {
+        if (!FT_IS_SCALABLE(face))
+            return static_cast<float>(-face->size->metrics.descender) / static_cast<float>(1 << 6);
+
+        return static_cast<float>(FT_MulFix(-face->descender, face->size->metrics.y_scale)) / static_cast<float>(1 << 6);
+    }
+    else
+    {
+        return 0.f;
+    }
+}
+
+
+////////////////////////////////////////////////////////////
 float Font::getLineSpacing(unsigned int characterSize) const
 {
     FT_Face face = m_fontHandles ? m_fontHandles->face : nullptr;

@@ -277,6 +277,30 @@ public:
     [[nodiscard]] float getKerning(std::uint32_t first, std::uint32_t second, unsigned int characterSize, bool bold = false) const;
 
     ////////////////////////////////////////////////////////////
+    /// \brief Get the font's ascent
+    ///
+    /// The ascent is the distance between the top of the font and the baseline.
+    ///
+    /// \param characterSize Reference character size
+    ///
+    /// \return Font's ascent, in pixels
+    ///
+    ////////////////////////////////////////////////////////////
+    float getAscent(unsigned int characterSize) const;
+
+    ////////////////////////////////////////////////////////////
+    /// \brief Get the font's descent
+    ///
+    /// The descent is the distance between the baseline and the bottom of the font.
+    ///
+    /// \param characterSize Reference character size
+    ///
+    /// \return Font's descent, in pixels
+    ///
+    ////////////////////////////////////////////////////////////
+    float getDescent(unsigned int characterSize) const;
+
+    ////////////////////////////////////////////////////////////
     /// \brief Get the line spacing
     ///
     /// Line spacing is the vertical offset to apply between two
