@@ -1,0 +1,95 @@
+name: Mutation
+
+# Run workflow when changing mutation configuration or manually triggered
+on:
+  push:
+    paths:
+      - 'mull.yml'
+      - '.github/workflows/mutation.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: environment-mutation-${{github.ref}}
+  cancel-in-progress: true
+
+env:
+  DISPLAY: ":99" # Display number to use for the X server
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: ${{ matrix.platform.name }} ${{ matrix.config.name }} ${{ matrix.type.name }}
+    runs-on: ${{ matrix.platform.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+        - { name: Linux Clang, os: ubuntu-24.04, flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -GNinja -DSFML_BUILD_EXAMPLES=OFF }
+        config:
+        - { name: Static, flags: -DBUILD_SHARED_LIBS=OFF }
+        type:
+        - { name: Debug, flags: -DCMAKE_BUILD_TYPE=Debug }
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Get CMake and Ninja
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.22'
+        ninjaVersion: latest
+
+    - name: Install Linux Dependencies and Tools
+      if: runner.os == 'Linux'
+      run: |
+        curl -1sLf 'https://dl.cloudsmith.io/public/mull-project/mull-stable/setup.deb.sh' | sudo -E bash
+        CLANG_VERSION=$(clang++ --version | sed -n 's/.*version \([0-9]\+\)\..*/\1/p')
+        echo "CLANG_VERSION=$CLANG_VERSION" >> $GITHUB_ENV
+        sudo apt-get update && sudo apt-get install xorg-dev libxrandr-dev libxcursor-dev libxi-dev libudev-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev libdrm-dev libgbm-dev x11-utils xvfb fluxbox eterm daemonize lib32stdc++6 llvm-$CLANG_VERSION mull-$CLANG_VERSION
+        mull-runner-$CLANG_VERSION --version
+
+    - name: Remove ALSA Library
+      if: runner.os == 'Linux'
+      run: sudo apt-get remove -y libasound2
+
+    - name: Configure CMake
+      run: cmake --preset dev -DCMAKE_VERBOSE_MAKEFILE=ON ${{matrix.platform.flags}} ${{matrix.config.flags}} ${{matrix.type.flags}} -DCMAKE_CXX_FLAGS="-O0 -fpass-plugin=/usr/lib/mull-ir-frontend-$CLANG_VERSION -g -grecord-command-line -fprofile-instr-generate -fcoverage-mapping"
+
+    - name: Build
+      run: cmake --build build --config ${{ matrix.type.name == 'Debug' && 'Debug' || 'Release' }}
+
+    - name: Prepare Test
+      run: |
+        set -e
+        set -o pipefail
+        # Start up Xvfb and fluxbox to host display tests
+        daemonize /usr/bin/Xvfb $DISPLAY -screen 0 1920x1080x24 -ac +extension GLX +extension DPMS +render -noreset -s 1440 +bs -maxclients 256 +xinerama
+        sleep 5
+        daemonize /usr/bin/fluxbox
+        sleep 5
+        # Test if the X server is working properly by outputting display information
+        xdpyinfo -queryExtensions | awk "/^name of display/,/^    significant bits in color specification/"
+        # Make sure the build/bin directory exists so that the find command does not fail if no executables are built
+        mkdir -p build/bin
+        # Make use of a test to print OpenGL vendor/renderer/version info to the console
+        find build/bin -name test-sfml-window -or -name test-sfml-window.exe -exec sh -c "{} *sf::Context* --section=\"Version String\" --success | grep OpenGL" \;
+
+    - name: Test
+      run: |
+        cd test
+        mull-runner-$CLANG_VERSION --allow-surviving --reporters SQLite --report-name SFML ../build/bin/test-sfml-system
+        mull-runner-$CLANG_VERSION --allow-surviving --reporters SQLite --report-name SFML ../build/bin/test-sfml-network
+        mull-runner-$CLANG_VERSION --allow-surviving --reporters SQLite --report-name SFML ../build/bin/test-sfml-audio
+        mull-runner-$CLANG_VERSION --allow-surviving --reporters SQLite --report-name SFML ../build/bin/test-sfml-window
+        mull-runner-$CLANG_VERSION --allow-surviving --reporters SQLite --report-name SFML ../build/bin/test-sfml-graphics
+
+    - name: Report (IDE)
+      run: mull-reporter-$CLANG_VERSION --allow-surviving --reporters IDE test/SFML.sqlite
+
+    - name: Report (Github Annotations)
+      run: mull-reporter-$CLANG_VERSION --allow-surviving --reporters GithubAnnotations test/SFML.sqlite
