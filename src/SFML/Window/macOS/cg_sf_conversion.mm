@@ -27,6 +27,7 @@
 // Headers
 ////////////////////////////////////////////////////////////
 #import <SFML/Window/macOS/Scaling.h>
+#include <SFML/Window/macOS/Utils.hpp>
 #include <SFML/Window/macOS/cg_sf_conversion.hpp>
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -37,21 +38,16 @@ namespace sf::priv
 ////////////////////////////////////////////////////////////
 unsigned int modeBitsPerPixel(CGDisplayModeRef mode)
 {
-    unsigned int bpp = 0; // no match
-
     // Compare encoding.
-    CFStringRef pixEnc = CGDisplayModeCopyPixelEncoding(mode);
-    if (CFStringCompare(pixEnc, CFSTR(IO32BitDirectPixels), kCFCompareCaseInsensitive) == kCFCompareEqualTo)
-        bpp = 32;
-    else if (CFStringCompare(pixEnc, CFSTR(IO16BitDirectPixels), kCFCompareCaseInsensitive) == kCFCompareEqualTo)
-        bpp = 16;
-    else if (CFStringCompare(pixEnc, CFSTR(IO8BitIndexedPixels), kCFCompareCaseInsensitive) == kCFCompareEqualTo)
-        bpp = 8;
+    const auto pixEnc = CFPtr<CFStringRef>(CGDisplayModeCopyPixelEncoding(mode));
+    if (CFStringCompare(pixEnc.get(), CFSTR(IO32BitDirectPixels), kCFCompareCaseInsensitive) == kCFCompareEqualTo)
+        return 32;
+    if (CFStringCompare(pixEnc.get(), CFSTR(IO16BitDirectPixels), kCFCompareCaseInsensitive) == kCFCompareEqualTo)
+        return 16;
+    if (CFStringCompare(pixEnc.get(), CFSTR(IO8BitIndexedPixels), kCFCompareCaseInsensitive) == kCFCompareEqualTo)
+        return 8;
 
-    // Clean up memory.
-    CFRelease(pixEnc);
-
-    return bpp;
+    return 0;
 }
 
 
