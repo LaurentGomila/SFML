@@ -73,6 +73,12 @@ TEST_CASE("[Window] sf::Event")
         const auto& resized = *event.getIf<sf::Event::Resized>();
         CHECK(resized.size == sf::Vector2u(1, 2));
 
+        event = sf::Event::WindowMoved{{3, 4}};
+        CHECK(event.is<sf::Event::WindowMoved>());
+        CHECK(event.getIf<sf::Event::WindowMoved>());
+        const auto& windowMoved = *event.getIf<sf::Event::WindowMoved>();
+        CHECK(windowMoved.position == sf::Vector2i(3, 4));
+
         event = sf::Event::FocusLost{};
         CHECK(event.is<sf::Event::FocusLost>());
         CHECK(event.getIf<sf::Event::FocusLost>());
@@ -226,6 +232,9 @@ TEST_CASE("[Window] sf::Event")
         // Non-empty structs
         const sf::Event::Resized resized;
         CHECK(resized.size == sf::Vector2u());
+
+        const sf::Event::WindowMoved windowMoved;
+        CHECK(windowMoved.position == sf::Vector2i());
 
         const sf::Event::TextEntered textEntered;
         CHECK(textEntered.unicode == 0);

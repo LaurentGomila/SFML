@@ -326,7 +326,8 @@ private:
     RRCrtc                   m_oldRRCrtc{};    ///< RRCrtc in use before we switch to fullscreen
     ::Cursor m_hiddenCursor{}; ///< As X11 doesn't provide cursor hiding, we must create a transparent one
     ::Cursor m_lastCursor{None}; ///< Last cursor used -- this data is not owned by the window and is required to be always valid
-    bool m_keyRepeat{true}; ///< Is the KeyRepeat feature enabled?
+    bool m_keyRepeat{true};              ///< Is the KeyRepeat feature enabled?
+    Vector2i m_previousPosition{-1, -1}; ///< Previous position of the window, to find if a ConfigureNotify event is a WindowMove event (could be a size event only)
     Vector2i m_previousSize{-1, -1}; ///< Previous size of the window, to find if a ConfigureNotify event is a resize event (could be a move event only)
     bool   m_useSizeHints{};   ///< Is the size of the window fixed with size hints?
     bool   m_fullscreen{};     ///< Is the window in fullscreen?

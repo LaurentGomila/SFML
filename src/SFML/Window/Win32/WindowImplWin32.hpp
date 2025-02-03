@@ -302,6 +302,7 @@ private:
         LoadCursor(nullptr, IDC_ARROW)}; //!< Last cursor used -- this data is not owned by the window and is required to be always valid
     HICON    m_icon{};                    //!< Custom icon assigned to the window
     bool     m_keyRepeatEnabled{true}; //!< Automatic key-repeat state for keydown events
+    Vector2i m_lastPosition;           //!< The last handled position of the window
     Vector2u m_lastSize;               //!< The last handled size of the window
     bool     m_resizing{};             //!< Is the window being resized?
     char16_t m_surrogate{}; //!< First half of the surrogate pair, in case we're receiving a Unicode character in two events
