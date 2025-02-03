@@ -4,6 +4,7 @@
 
 #include <GraphicsUtil.hpp>
 #include <type_traits>
+#include <utility>
 
 TEST_CASE("[Graphics] sf::VertexArray")
 {
@@ -39,11 +40,11 @@ TEST_CASE("[Graphics] sf::VertexArray")
             CHECK(vertexArray.getVertexCount() == 10);
             CHECK(vertexArray.getPrimitiveType() == sf::PrimitiveType::Lines);
             CHECK(vertexArray.getBounds() == sf::FloatRect({0, 0}, {0, 0}));
-            for (std::size_t i = 0; i < vertexArray.getVertexCount(); ++i)
+            for (const auto& vertex : vertexArray)
             {
-                CHECK(vertexArray[i].position == sf::Vertex{}.position);
-                CHECK(vertexArray[i].color == sf::Vertex{}.color);
-                CHECK(vertexArray[i].texCoords == sf::Vertex{}.texCoords);
+                CHECK(vertex.position == sf::Vertex{}.position);
+                CHECK(vertex.color == sf::Vertex{}.color);
+                CHECK(vertex.texCoords == sf::Vertex{}.texCoords);
             }
         }
     }
@@ -53,11 +54,11 @@ TEST_CASE("[Graphics] sf::VertexArray")
         sf::VertexArray vertexArray;
         vertexArray.resize(42);
         CHECK(vertexArray.getVertexCount() == 42);
-        for (std::size_t i = 0; i < vertexArray.getVertexCount(); ++i)
+        for (const auto& vertex : vertexArray)
         {
-            CHECK(vertexArray[i].position == sf::Vertex{}.position);
-            CHECK(vertexArray[i].color == sf::Vertex{}.color);
-            CHECK(vertexArray[i].texCoords == sf::Vertex{}.texCoords);
+            CHECK(vertex.position == sf::Vertex{}.position);
+            CHECK(vertex.color == sf::Vertex{}.color);
+            CHECK(vertex.texCoords == sf::Vertex{}.texCoords);
         }
     }
 
@@ -91,6 +92,27 @@ TEST_CASE("[Graphics] sf::VertexArray")
         CHECK(vertexArray[9].texCoords == otherVertex.texCoords);
     }
 
+    SECTION("Read from array")
+    {
+        sf::VertexArray vertexArray;
+        vertexArray.append({{1.0f, 2.0f}});
+        vertexArray.append({{10.0f, 20.0f}});
+
+        SECTION("Const")
+        {
+            const auto& constVertexArray = vertexArray;
+            CHECK(constVertexArray[0].position == sf::Vector2f(1, 2));
+            CHECK(constVertexArray[1].position == sf::Vector2f(10, 20));
+        }
+
+        SECTION("Non const")
+        {
+            auto& nonConstVertexArray = vertexArray;
+            CHECK(nonConstVertexArray[0].position == sf::Vector2f(1, 2));
+            CHECK(nonConstVertexArray[1].position == sf::Vector2f(10, 20));
+        }
+    }
+
     SECTION("Set primitive type")
     {
         sf::VertexArray vertexArray;
@@ -110,5 +132,35 @@ TEST_CASE("[Graphics] sf::VertexArray")
         CHECK(vertexArray.getBounds() == sf::FloatRect({2, 2}, {3, 3}));
         vertexArray.append({{10, 10}});
         CHECK(vertexArray.getBounds() == sf::FloatRect({2, 2}, {8, 8}));
+    }
+
+    SECTION("Ranged loop")
+    {
+        sf::VertexArray vertexArray;
+        vertexArray.append({{1, 1}});
+        vertexArray.append({{1, 1}});
+        vertexArray.append({{1, 1}});
+
+        std::size_t count = 0;
+
+        SECTION("Const")
+        {
+            for (const auto& vertex : std::as_const(vertexArray))
+            {
+                CHECK(vertex.position == sf::Vector2f(1, 1));
+                ++count;
+            }
+        }
+
+        SECTION("Non const")
+        {
+            for (const auto& vertex : vertexArray)
+            {
+                CHECK(vertex.position == sf::Vector2f(1, 1));
+                ++count;
+            }
+        }
+
+        CHECK(count == vertexArray.getVertexCount());
     }
 }

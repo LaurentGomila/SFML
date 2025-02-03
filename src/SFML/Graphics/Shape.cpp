@@ -255,8 +255,8 @@ void Shape::draw(RenderTarget& target, RenderStates states) const
 ////////////////////////////////////////////////////////////
 void Shape::updateFillColors()
 {
-    for (std::size_t i = 0; i < m_vertices.getVertexCount(); ++i)
-        m_vertices[i].color = m_fillColor;
+    for (auto& vertex : m_vertices)
+        vertex.color = m_fillColor;
 }
 
 
@@ -269,10 +269,10 @@ void Shape::updateTexCoords()
     const Vector2f safeInsideSize(m_insideBounds.size.x > 0 ? m_insideBounds.size.x : 1.f,
                                   m_insideBounds.size.y > 0 ? m_insideBounds.size.y : 1.f);
 
-    for (std::size_t i = 0; i < m_vertices.getVertexCount(); ++i)
+    for (auto& vertex : m_vertices)
     {
-        const Vector2f ratio    = (m_vertices[i].position - m_insideBounds.position).componentWiseDiv(safeInsideSize);
-        m_vertices[i].texCoords = convertedTextureRect.position + convertedTextureRect.size.componentWiseMul(ratio);
+        const Vector2f ratio = (vertex.position - m_insideBounds.position).componentWiseDiv(safeInsideSize);
+        vertex.texCoords     = convertedTextureRect.position + convertedTextureRect.size.componentWiseMul(ratio);
     }
 }
 
@@ -335,8 +335,8 @@ void Shape::updateOutline()
 ////////////////////////////////////////////////////////////
 void Shape::updateOutlineColors()
 {
-    for (std::size_t i = 0; i < m_outlineVertices.getVertexCount(); ++i)
-        m_outlineVertices[i].color = m_outlineColor;
+    for (auto& vertex : m_outlineVertices)
+        vertex.color = m_outlineColor;
 }
 
 } // namespace sf
