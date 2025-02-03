@@ -7,4 +7,4 @@ sfml_add_example(vulkan GUI_APP
                  DEPENDS SFML::Graphics)
 
 # external dependency headers
-target_include_directories(vulkan SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/examples/vulkan)
+target_include_directories(vulkan SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/examples/vulkan")

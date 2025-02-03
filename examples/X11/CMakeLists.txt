@@ -9,4 +9,4 @@ sfml_add_example(X11Example GUI_APP
                  DEPENDS SFML::Window X11::X11)
 
 # external dependency headers
-target_include_directories(X11Example SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/examples/include)
+target_include_directories(X11Example SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/examples/include")

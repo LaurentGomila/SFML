@@ -260,13 +260,13 @@ macro(sfml_add_library module)
 
     # add <project>/include as public include directory
     target_include_directories(${target}
-                               PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-                               PRIVATE ${PROJECT_SOURCE_DIR}/src)
+                               PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
+                               PRIVATE "${PROJECT_SOURCE_DIR}/src")
 
     if(SFML_BUILD_FRAMEWORKS)
-        target_include_directories(${target} INTERFACE $<INSTALL_INTERFACE:SFML.framework>)
+        target_include_directories(${target} INTERFACE "$<INSTALL_INTERFACE:SFML.framework>")
     else()
-        target_include_directories(${target} INTERFACE $<INSTALL_INTERFACE:include>)
+        target_include_directories(${target} INTERFACE "$<INSTALL_INTERFACE:include>")
     endif()
 
     # define SFML_STATIC if the build type is not set to 'shared'

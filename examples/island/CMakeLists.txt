@@ -9,6 +9,6 @@ sfml_add_example(island GUI_APP
                  DEPENDS SFML::Graphics)
 
 # external dependency headers
-target_include_directories(island SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/examples/island)
+target_include_directories(island SYSTEM PRIVATE "${PROJECT_SOURCE_DIR}/examples/island")
 
 target_link_libraries(island PRIVATE Threads::Threads)
