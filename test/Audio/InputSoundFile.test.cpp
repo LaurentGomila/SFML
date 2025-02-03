@@ -171,12 +171,12 @@ TEST_CASE("[Audio] sf::InputSoundFile")
 
                 SECTION("Polish filename")
                 {
-                    REQUIRE(inputSoundFile.openFromFile(U"Audio/ding-\u0144.flac"));
+                    REQUIRE(inputSoundFile.openFromFile(U"Audio/ding-ń.flac"));
                 }
 
                 SECTION("Emoji filename")
                 {
-                    REQUIRE(inputSoundFile.openFromFile(U"Audio/ding-\U0001F40C.flac"));
+                    REQUIRE(inputSoundFile.openFromFile(U"Audio/ding-🐌.flac"));
                 }
 
                 CHECK(inputSoundFile.getSampleCount() == 87'798);
@@ -196,12 +196,12 @@ TEST_CASE("[Audio] sf::InputSoundFile")
 
                 SECTION("Polish filename")
                 {
-                    REQUIRE(inputSoundFile.openFromFile(U"Audio/ding-\u0144.mp3"));
+                    REQUIRE(inputSoundFile.openFromFile(U"Audio/ding-ń.mp3"));
                 }
 
                 SECTION("Emoji filename")
                 {
-                    REQUIRE(inputSoundFile.openFromFile(U"Audio/ding-\U0001F40C.mp3"));
+                    REQUIRE(inputSoundFile.openFromFile(U"Audio/ding-🐌.mp3"));
                 }
 
                 CHECK(inputSoundFile.getSampleCount() == 87'798);
@@ -221,12 +221,12 @@ TEST_CASE("[Audio] sf::InputSoundFile")
 
                 SECTION("Polish filename")
                 {
-                    REQUIRE(inputSoundFile.openFromFile(U"Audio/doodle_pop-\u0144.ogg"));
+                    REQUIRE(inputSoundFile.openFromFile(U"Audio/doodle_pop-ń.ogg"));
                 }
 
                 SECTION("Emoji filename")
                 {
-                    REQUIRE(inputSoundFile.openFromFile(U"Audio/doodle_pop-\U0001F40C.ogg"));
+                    REQUIRE(inputSoundFile.openFromFile(U"Audio/doodle_pop-🐌.ogg"));
                 }
 
                 CHECK(inputSoundFile.getSampleCount() == 2'116'992);
@@ -246,12 +246,12 @@ TEST_CASE("[Audio] sf::InputSoundFile")
 
                 SECTION("Polish filename")
                 {
-                    REQUIRE(inputSoundFile.openFromFile(U"Audio/killdeer-\u0144.wav"));
+                    REQUIRE(inputSoundFile.openFromFile(U"Audio/killdeer-ń.wav"));
                 }
 
                 SECTION("Emoji filename")
                 {
-                    REQUIRE(inputSoundFile.openFromFile(U"Audio/killdeer-\U0001F40C.wav"));
+                    REQUIRE(inputSoundFile.openFromFile(U"Audio/killdeer-🐌.wav"));
                 }
 
                 CHECK(inputSoundFile.getSampleCount() == 112'941);

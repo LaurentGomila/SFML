@@ -129,12 +129,12 @@ TEST_CASE("[Audio] sf::SoundBuffer", runAudioDeviceTests())
 
             SECTION("Polish filename")
             {
-                REQUIRE(soundBuffer.loadFromFile(U"Audio/ding-\u0144.flac"));
+                REQUIRE(soundBuffer.loadFromFile(U"Audio/ding-ń.flac"));
             }
 
             SECTION("Emoji filename")
             {
-                REQUIRE(soundBuffer.loadFromFile(U"Audio/ding-\U0001F40C.flac"));
+                REQUIRE(soundBuffer.loadFromFile(U"Audio/ding-🐌.flac"));
             }
 
             CHECK(soundBuffer.getSamples() != nullptr);

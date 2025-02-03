@@ -353,14 +353,14 @@ TEST_CASE("[System] sf::String")
 
         SECTION("UTF-32 character constructor")
         {
-            const sf::String string = U'\U0010AFAF';
+            const sf::String string = U'🐌';
             CHECK(std::string(string) == "\0"s);
-            CHECK(std::wstring(string) == select(L""s, L"\U0010AFAF"s));
+            CHECK(std::wstring(string) == select(L""s, L"🐌"s));
             CHECK(string.toAnsiString() == "\0"s);
-            CHECK(string.toWideString() == select(L""s, L"\U0010AFAF"s));
-            CHECK(string.toUtf8() == sf::U8String{0xF4, 0x8A, 0xBE, 0xAF});
-            CHECK(string.toUtf16() == u"\U0010AFAF"s);
-            CHECK(string.toUtf32() == U"\U0010AFAF"s);
+            CHECK(string.toWideString() == select(L""s, L"🐌"s));
+            CHECK(string.toUtf8() == sf::U8String{0xF0, 0x9F, 0x90, 0x8C});
+            CHECK(string.toUtf16() == u"🐌"s);
+            CHECK(string.toUtf32() == U"🐌"s);
             CHECK(string.getSize() == 1);
             CHECK(!string.isEmpty());
             CHECK(string.getData() != nullptr);
@@ -385,14 +385,14 @@ TEST_CASE("[System] sf::String")
 
             SECTION("Non-empty string")
             {
-                const sf::String string = U"\U0010ABCDrs";
+                const sf::String string = U"🐌rs";
                 CHECK(std::string(string) == "\0rs"s);
-                CHECK(std::wstring(string) == select(L"rs"s, L"\U0010ABCDrs"s));
+                CHECK(std::wstring(string) == select(L"rs"s, L"🐌rs"s));
                 CHECK(string.toAnsiString() == "\0rs"s);
-                CHECK(string.toWideString() == select(L"rs"s, L"\U0010ABCDrs"s));
-                CHECK(string.toUtf8() == sf::U8String{0xF4, 0x8A, 0xAF, 0x8D, 'r', 's'});
-                CHECK(string.toUtf16() == u"\U0010ABCDrs"s);
-                CHECK(string.toUtf32() == U"\U0010ABCDrs"s);
+                CHECK(string.toWideString() == select(L"rs"s, L"🐌rs"s));
+                CHECK(string.toUtf8() == sf::U8String{0xF0, 0x9F, 0x90, 0x8C, 'r', 's'});
+                CHECK(string.toUtf16() == u"🐌rs"s);
+                CHECK(string.toUtf32() == U"🐌rs"s);
                 CHECK(string.getSize() == 3);
                 CHECK(!string.isEmpty());
                 CHECK(string.getData() != nullptr);
@@ -401,14 +401,14 @@ TEST_CASE("[System] sf::String")
 
         SECTION("UTF-32 string constructor")
         {
-            const sf::String string = U"tuv\U00104321"s;
+            const sf::String string = U"tuv🐌"s;
             CHECK(std::string(string) == "tuv\0"s);
-            CHECK(std::wstring(string) == select(L"tuv"s, L"tuv\U00104321"s));
+            CHECK(std::wstring(string) == select(L"tuv"s, L"tuv🐌"s));
             CHECK(string.toAnsiString() == "tuv\0"s);
-            CHECK(string.toWideString() == select(L"tuv"s, L"tuv\U00104321"s));
-            CHECK(string.toUtf8() == sf::U8String{'t', 'u', 'v', 0xF4, 0x84, 0x8C, 0xA1});
-            CHECK(string.toUtf16() == u"tuv\U00104321"s);
-            CHECK(string.toUtf32() == U"tuv\U00104321"s);
+            CHECK(string.toWideString() == select(L"tuv"s, L"tuv🐌"s));
+            CHECK(string.toUtf8() == sf::U8String{'t', 'u', 'v', 0xF0, 0x9F, 0x90, 0x8C});
+            CHECK(string.toUtf16() == u"tuv🐌"s);
+            CHECK(string.toUtf32() == U"tuv🐌"s);
             CHECK(string.getSize() == 4);
             CHECK(!string.isEmpty());
             CHECK(string.getData() != nullptr);
@@ -461,15 +461,15 @@ TEST_CASE("[System] sf::String")
 
     SECTION("fromUtf32()")
     {
-        constexpr std::array<char32_t, 4> characters{'w', 0x104321, 'y', 'z'};
+        constexpr std::array<char32_t, 4> characters{'w', U'🐌', 'y', 'z'};
         const sf::String                  string = sf::String::fromUtf32(characters.begin(), characters.end());
         CHECK(std::string(string) == "w\0yz"s);
-        CHECK(std::wstring(string) == select(L"wyz"s, L"w\U00104321yz"s));
+        CHECK(std::wstring(string) == select(L"wyz"s, L"w🐌yz"s));
         CHECK(string.toAnsiString() == "w\0yz"s);
-        CHECK(string.toWideString() == select(L"wyz"s, L"w\U00104321yz"s));
-        CHECK(string.toUtf8() == sf::U8String{'w', 0xF4, 0x84, 0x8C, 0xA1, 'y', 'z'});
-        CHECK(string.toUtf16() == u"w\U00104321yz"s);
-        CHECK(string.toUtf32() == U"w\U00104321yz"s);
+        CHECK(string.toWideString() == select(L"wyz"s, L"w🐌yz"s));
+        CHECK(string.toUtf8() == sf::U8String{'w', 0xF0, 0x9F, 0x90, 0x8C, 'y', 'z'});
+        CHECK(string.toUtf16() == u"w🐌yz"s);
+        CHECK(string.toUtf32() == U"w🐌yz"s);
         CHECK(string.getSize() == 4);
         CHECK(!string.isEmpty());
         CHECK(string.getData() != nullptr);

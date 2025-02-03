@@ -140,12 +140,12 @@ TEST_CASE("[Audio] sf::Music", runAudioDeviceTests())
 
             SECTION("Polish filename")
             {
-                REQUIRE(music.openFromFile(U"Audio/ding-\u0144.mp3"));
+                REQUIRE(music.openFromFile(U"Audio/ding-ń.mp3"));
             }
 
             SECTION("Emoji filename")
             {
-                REQUIRE(music.openFromFile(U"Audio/ding-\U0001F40C.mp3"));
+                REQUIRE(music.openFromFile(U"Audio/ding-🐌.mp3"));
             }
 
             CHECK(music.getDuration() == sf::microseconds(1990884));

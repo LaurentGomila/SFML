@@ -407,6 +407,11 @@ function(sfml_add_test target SOURCES DEPENDS)
         endif()
     endif()
 
+    # Allow for UTF-8 characters in test code
+    if(SFML_COMPILER_MSVC)
+        target_compile_options(${target} PRIVATE /utf-8)
+    endif()
+
     # Add the test
     catch_discover_tests(${target} WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 endfunction()

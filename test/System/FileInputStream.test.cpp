@@ -102,12 +102,12 @@ TEST_CASE("[System] sf::FileInputStream")
 
         SECTION("From Polish filename")
         {
-            REQUIRE(fileInputStream.open(U"System/test-\u0144.txt"));
+            REQUIRE(fileInputStream.open(U"System/test-ń.txt"));
         }
 
         SECTION("From emoji filename")
         {
-            REQUIRE(fileInputStream.open(U"System/test-\U0001F40C.txt"));
+            REQUIRE(fileInputStream.open(U"System/test-🐌.txt"));
         }
 
         CHECK(fileInputStream.read(buffer.data(), 5) == 5);
