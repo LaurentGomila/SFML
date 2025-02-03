@@ -1006,6 +1006,13 @@ unsigned int Texture::getMaximumSize()
 
 
 ////////////////////////////////////////////////////////////
+bool Texture::getPixelsFlipped() const
+{
+    return m_pixelsFlipped;
+}
+
+
+////////////////////////////////////////////////////////////
 Texture& Texture::operator=(const Texture& right)
 {
     Texture temp(right);

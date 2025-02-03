@@ -132,6 +132,7 @@ TEST_CASE("[Graphics] sf::Texture", runDisplayTests())
             CHECK(!texture.isSrgb());
             CHECK(!texture.isRepeated());
             CHECK(texture.getNativeHandle() == 0);
+            CHECK(!texture.getPixelsFlipped());
         }
 
         SECTION("Assignment")
@@ -144,6 +145,7 @@ TEST_CASE("[Graphics] sf::Texture", runDisplayTests())
             CHECK(!texture.isSrgb());
             CHECK(!texture.isRepeated());
             CHECK(texture.getNativeHandle() == 0);
+            CHECK(!texture.getPixelsFlipped());
         }
     }
 
@@ -158,6 +160,7 @@ TEST_CASE("[Graphics] sf::Texture", runDisplayTests())
             CHECK(!texture.isSrgb());
             CHECK(!texture.isRepeated());
             CHECK(texture.getNativeHandle() != 0);
+            CHECK(!texture.getPixelsFlipped());
         }
 
         SECTION("Assignment")
@@ -170,6 +173,7 @@ TEST_CASE("[Graphics] sf::Texture", runDisplayTests())
             CHECK(!texture.isSrgb());
             CHECK(!texture.isRepeated());
             CHECK(texture.getNativeHandle() != 0);
+            CHECK(!texture.getPixelsFlipped());
         }
     }
 
@@ -207,6 +211,7 @@ TEST_CASE("[Graphics] sf::Texture", runDisplayTests())
         CHECK(!texture.isSrgb());
         CHECK(!texture.isRepeated());
         CHECK(texture.getNativeHandle() != 0);
+        CHECK(!texture.getPixelsFlipped());
     }
 
     SECTION("loadFromMemory()")
@@ -219,6 +224,7 @@ TEST_CASE("[Graphics] sf::Texture", runDisplayTests())
         CHECK(!texture.isSrgb());
         CHECK(!texture.isRepeated());
         CHECK(texture.getNativeHandle() != 0);
+        CHECK(!texture.getPixelsFlipped());
     }
 
     SECTION("loadFromStream()")
@@ -232,6 +238,7 @@ TEST_CASE("[Graphics] sf::Texture", runDisplayTests())
         CHECK(!texture.isSrgb());
         CHECK(!texture.isRepeated());
         CHECK(texture.getNativeHandle() != 0);
+        CHECK(!texture.getPixelsFlipped());
     }
 
     SECTION("loadFromImage()")
@@ -269,6 +276,7 @@ TEST_CASE("[Graphics] sf::Texture", runDisplayTests())
             }
 
             CHECK(texture.getNativeHandle() != 0);
+            CHECK(!texture.getPixelsFlipped());
         }
     }
 
@@ -293,6 +301,8 @@ TEST_CASE("[Graphics] sf::Texture", runDisplayTests())
             REQUIRE(textureCopy.getSize() == sf::Vector2u(1, 2));
             CHECK(textureCopy.copyToImage().getPixel(sf::Vector2u(0, 1)) == sf::Color::Red);
         }
+
+        CHECK(!texture.getPixelsFlipped());
     }
 
     SECTION("update()")

@@ -711,6 +711,14 @@ public:
     ////////////////////////////////////////////////////////////
     [[nodiscard]] static unsigned int getMaximumSize();
 
+    ////////////////////////////////////////////////////////////
+    /// \brief Get the state of whether the Y orientatino of pixels are flipped
+    ///
+    /// \return `true` if pixels are flipped, otherwise `false`
+    ///
+    ////////////////////////////////////////////////////////////
+    [[nodiscard]] bool getPixelsFlipped() const;
+
 private:
     friend class Text;
     friend class RenderTexture;
