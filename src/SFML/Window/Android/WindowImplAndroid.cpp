@@ -416,9 +416,13 @@ int WindowImplAndroid::processKeyEvent(AInputEvent* inputEvent, ActivityStates& 
 
     const auto forwardKeyEvent = [&](auto keyEvent)
     {
-        keyEvent.code  = androidKeyToSF(key);
-        keyEvent.alt   = metakey & AMETA_ALT_ON;
-        keyEvent.shift = metakey & AMETA_SHIFT_ON;
+        keyEvent.code       = androidKeyToSF(key);
+        keyEvent.alt        = metakey & AMETA_ALT_ON;
+        keyEvent.shift      = metakey & AMETA_SHIFT_ON;
+        keyEvent.system     = metakey & AMETA_SYM_ON;
+        keyEvent.capsLock   = metakey & AMETA_CAPS_LOCK_ON;
+        keyEvent.numLock    = metakey & AMETA_NUM_LOCK_ON;
+        keyEvent.scrollLock = metakey & AMETA_SCROLL_LOCK_ON;
         forwardEvent(keyEvent);
     };
 

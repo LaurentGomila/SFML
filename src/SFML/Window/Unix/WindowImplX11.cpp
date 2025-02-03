@@ -1803,12 +1803,15 @@ bool WindowImplX11::processEvent(XEvent& windowEvent)
             // Fill the event parameters
             // TODO: if modifiers are wrong, use XGetModifierMapping to retrieve the actual modifiers mapping
             Event::KeyPressed event;
-            event.code     = KeyboardImpl::getKeyFromEvent(windowEvent.xkey);
-            event.scancode = KeyboardImpl::getScancodeFromEvent(windowEvent.xkey);
-            event.alt      = windowEvent.xkey.state & Mod1Mask;
-            event.control  = windowEvent.xkey.state & ControlMask;
-            event.shift    = windowEvent.xkey.state & ShiftMask;
-            event.system   = windowEvent.xkey.state & Mod4Mask;
+            event.code       = KeyboardImpl::getKeyFromEvent(windowEvent.xkey);
+            event.scancode   = KeyboardImpl::getScancodeFromEvent(windowEvent.xkey);
+            event.alt        = windowEvent.xkey.state & Mod1Mask;
+            event.control    = windowEvent.xkey.state & ControlMask;
+            event.shift      = windowEvent.xkey.state & ShiftMask;
+            event.system     = windowEvent.xkey.state & Mod4Mask;
+            event.capsLock   = windowEvent.xkey.state & LockMask;
+            event.numLock    = windowEvent.xkey.state & Mod2Mask;
+            event.scrollLock = windowEvent.xkey.state & Mod3Mask;
 
             const bool filtered = XFilterEvent(&windowEvent, None);
 
@@ -1884,12 +1887,15 @@ bool WindowImplX11::processEvent(XEvent& windowEvent)
         {
             // Fill the event parameters
             Event::KeyReleased event;
-            event.code     = KeyboardImpl::getKeyFromEvent(windowEvent.xkey);
-            event.scancode = KeyboardImpl::getScancodeFromEvent(windowEvent.xkey);
-            event.alt      = windowEvent.xkey.state & Mod1Mask;
-            event.control  = windowEvent.xkey.state & ControlMask;
-            event.shift    = windowEvent.xkey.state & ShiftMask;
-            event.system   = windowEvent.xkey.state & Mod4Mask;
+            event.code       = KeyboardImpl::getKeyFromEvent(windowEvent.xkey);
+            event.scancode   = KeyboardImpl::getScancodeFromEvent(windowEvent.xkey);
+            event.alt        = windowEvent.xkey.state & Mod1Mask;
+            event.control    = windowEvent.xkey.state & ControlMask;
+            event.shift      = windowEvent.xkey.state & ShiftMask;
+            event.system     = windowEvent.xkey.state & Mod4Mask;
+            event.capsLock   = windowEvent.xkey.state & LockMask;
+            event.numLock    = windowEvent.xkey.state & Mod2Mask;
+            event.scrollLock = windowEvent.xkey.state & Mod3Mask;
             pushEvent(event);
 
             break;

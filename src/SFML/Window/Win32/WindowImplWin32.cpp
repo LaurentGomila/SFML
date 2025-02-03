@@ -883,12 +883,15 @@ void WindowImplWin32::processEvent(UINT message, WPARAM wParam, LPARAM lParam)
             if (m_keyRepeatEnabled || ((HIWORD(lParam) & KF_REPEAT) == 0))
             {
                 Event::KeyPressed event;
-                event.alt      = HIWORD(GetKeyState(VK_MENU)) != 0;
-                event.control  = HIWORD(GetKeyState(VK_CONTROL)) != 0;
-                event.shift    = HIWORD(GetKeyState(VK_SHIFT)) != 0;
-                event.system   = HIWORD(GetKeyState(VK_LWIN)) || HIWORD(GetKeyState(VK_RWIN));
-                event.code     = virtualKeyCodeToSF(wParam, lParam);
-                event.scancode = toScancode(wParam, lParam);
+                event.alt        = GetKeyState(VK_MENU) & 0x8000;
+                event.control    = GetKeyState(VK_CONTROL) & 0x8000;
+                event.shift      = GetKeyState(VK_SHIFT) & 0x8000;
+                event.system     = GetKeyState(VK_LWIN) & 0x8000 || GetKeyState(VK_RWIN) & 0x8000;
+                event.capsLock   = GetKeyState(VK_CAPITAL) & 0x0001;
+                event.numLock    = GetKeyState(VK_NUMLOCK) & 0x0001;
+                event.scrollLock = GetKeyState(VK_SCROLL) & 0x0001;
+                event.code       = virtualKeyCodeToSF(wParam, lParam);
+                event.scancode   = toScancode(wParam, lParam);
                 pushEvent(event);
             }
             break;
@@ -899,12 +902,15 @@ void WindowImplWin32::processEvent(UINT message, WPARAM wParam, LPARAM lParam)
         case WM_SYSKEYUP:
         {
             Event::KeyReleased event;
-            event.alt      = HIWORD(GetKeyState(VK_MENU)) != 0;
-            event.control  = HIWORD(GetKeyState(VK_CONTROL)) != 0;
-            event.shift    = HIWORD(GetKeyState(VK_SHIFT)) != 0;
-            event.system   = HIWORD(GetKeyState(VK_LWIN)) || HIWORD(GetKeyState(VK_RWIN));
-            event.code     = virtualKeyCodeToSF(wParam, lParam);
-            event.scancode = toScancode(wParam, lParam);
+            event.alt        = GetKeyState(VK_MENU) & 0x8000;
+            event.control    = GetKeyState(VK_CONTROL) & 0x8000;
+            event.shift      = GetKeyState(VK_SHIFT) & 0x8000;
+            event.system     = GetKeyState(VK_LWIN) & 0x8000 || GetKeyState(VK_RWIN) & 0x8000;
+            event.capsLock   = GetKeyState(VK_CAPITAL) & 0x0001;
+            event.numLock    = GetKeyState(VK_NUMLOCK) & 0x0001;
+            event.scrollLock = GetKeyState(VK_SCROLL) & 0x0001;
+            event.code       = virtualKeyCodeToSF(wParam, lParam);
+            event.scancode   = toScancode(wParam, lParam);
             pushEvent(event);
             break;
         }

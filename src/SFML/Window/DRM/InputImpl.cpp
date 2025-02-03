@@ -91,6 +91,18 @@ bool systemDown()
 {
     return keyMap[sf::Keyboard::Key::LSystem] || keyMap[sf::Keyboard::Key::RSystem];
 }
+bool capsLockDown()
+{
+    return false; // TODO: To be implemented, potentially with scancode support
+}
+bool numLockDown()
+{
+    return false; // TODO: To be implemented, potentially with scancode support
+}
+bool scrollLockDown()
+{
+    return false; // TODO: To be implemented, potentially with scancode support
+}
 
 void uninitFileDescriptors()
 {
@@ -408,12 +420,15 @@ std::optional<sf::Event> eventProcess()
 
                     const auto makeKeyEvent = [&](auto keyEvent)
                     {
-                        keyEvent.code     = kb;
-                        keyEvent.scancode = sf::Keyboard::Scan::Unknown; // TODO: not implemented
-                        keyEvent.alt      = altDown();
-                        keyEvent.control  = controlDown();
-                        keyEvent.shift    = shiftDown();
-                        keyEvent.system   = systemDown();
+                        keyEvent.code       = kb;
+                        keyEvent.scancode   = sf::Keyboard::Scan::Unknown; // TODO: not implemented
+                        keyEvent.alt        = altDown();
+                        keyEvent.control    = controlDown();
+                        keyEvent.shift      = shiftDown();
+                        keyEvent.system     = systemDown();
+                        keyEvent.capsLock   = capsLockDown();
+                        keyEvent.numLock    = numLockDown();
+                        keyEvent.scrollLock = scrollLockDown();
                         return keyEvent;
                     };
 

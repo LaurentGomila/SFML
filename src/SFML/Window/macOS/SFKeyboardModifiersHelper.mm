@@ -63,6 +63,7 @@ struct ModifiersState
     BOOL leftControlWasDown{};
     BOOL rightControlWasDown{};
     BOOL capsLockWasOn{};
+    BOOL numLockWasOn{};
 };
 
 
@@ -151,7 +152,8 @@ void initialiseKeyboardHelper()
     state.rightAlternateWasDown = isKeyMaskActive(modifiers, NSRightAlternateKeyMask);
     state.leftControlWasDown    = isKeyMaskActive(modifiers, NSLeftControlKeyMask);
     state.rightControlWasDown   = isKeyMaskActive(modifiers, NSRightControlKeyMask);
-    state.capsLockWasOn         = isKeyMaskActive(modifiers, NSEventModifierFlagCapsLock);
+    state.capsLockWasOn         = isKeyMaskActive(modifiers, NSAlphaShiftKeyMask);
+    state.numLockWasOn          = isKeyMaskActive(modifiers, NSNumericPadKeyMask);
 
     isStateInitialized = YES;
 }
@@ -161,12 +163,15 @@ void initialiseKeyboardHelper()
 sf::Event::KeyPressed keyPressedEventWithModifiers(NSUInteger modifiers, sf::Keyboard::Key key, sf::Keyboard::Scancode code)
 {
     sf::Event::KeyPressed event;
-    event.code     = key;
-    event.scancode = code;
-    event.alt      = modifiers & NSAlternateKeyMask;
-    event.control  = modifiers & NSControlKeyMask;
-    event.shift    = modifiers & NSShiftKeyMask;
-    event.system   = modifiers & NSCommandKeyMask;
+    event.code       = key;
+    event.scancode   = code;
+    event.alt        = modifiers & NSAlternateKeyMask;
+    event.control    = modifiers & NSControlKeyMask;
+    event.shift      = modifiers & NSShiftKeyMask;
+    event.system     = modifiers & NSCommandKeyMask;
+    event.capsLock   = modifiers & NSAlphaShiftKeyMask;
+    event.numLock    = modifiers & NSNumericPadKeyMask;
+    event.scrollLock = false; // Doesn't exist on macOS
     return event;
 }
 
@@ -175,12 +180,15 @@ sf::Event::KeyPressed keyPressedEventWithModifiers(NSUInteger modifiers, sf::Key
 sf::Event::KeyReleased keyReleasedEventWithModifiers(NSUInteger modifiers, sf::Keyboard::Key key, sf::Keyboard::Scancode code)
 {
     sf::Event::KeyReleased event;
-    event.code     = key;
-    event.scancode = code;
-    event.alt      = modifiers & NSAlternateKeyMask;
-    event.control  = modifiers & NSControlKeyMask;
-    event.shift    = modifiers & NSShiftKeyMask;
-    event.system   = modifiers & NSCommandKeyMask;
+    event.code       = key;
+    event.scancode   = code;
+    event.alt        = modifiers & NSAlternateKeyMask;
+    event.control    = modifiers & NSControlKeyMask;
+    event.shift      = modifiers & NSShiftKeyMask;
+    event.system     = modifiers & NSCommandKeyMask;
+    event.capsLock   = modifiers & NSAlphaShiftKeyMask;
+    event.numLock    = modifiers & NSNumericPadKeyMask;
+    event.scrollLock = false; // Doesn't exist on macOS
     return event;
 }
 
@@ -242,5 +250,13 @@ void handleModifiersChanged(NSUInteger modifiers, sf::priv::WindowImplCocoa& req
                        state.capsLockWasOn,
                        sf::Keyboard::Key::Unknown,
                        sf::Keyboard::Scan::CapsLock,
+                       requester);
+
+    // Handle num lock
+    processOneModifier(modifiers,
+                       NSEventModifierFlagNumericPad,
+                       state.numLockWasOn,
+                       sf::Keyboard::Key::Unknown,
+                       sf::Keyboard::Scan::NumLock,
                        requester);
 }
