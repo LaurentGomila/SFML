@@ -425,12 +425,10 @@ TEST_CASE("[Graphics] sf::Shader", skipShaderFullTests())
 
         SECTION("One shader with non-ASCII filename")
         {
-            CHECK(shader.loadFromFile(U"Graphics/shader-\u0144.vert", sf::Shader::Type::Vertex) ==
-                  sf::Shader::isAvailable());
+            CHECK(shader.loadFromFile(U"Graphics/shader-ń.vert", sf::Shader::Type::Vertex) == sf::Shader::isAvailable());
             CHECK(static_cast<bool>(shader.getNativeHandle()) == sf::Shader::isAvailable());
 
-            CHECK(shader.loadFromFile(U"Graphics/shader-\U0001F40C.vert", sf::Shader::Type::Vertex) ==
-                  sf::Shader::isAvailable());
+            CHECK(shader.loadFromFile(U"Graphics/shader-🐌.vert", sf::Shader::Type::Vertex) == sf::Shader::isAvailable());
             CHECK(static_cast<bool>(shader.getNativeHandle()) == sf::Shader::isAvailable());
         }
     }
